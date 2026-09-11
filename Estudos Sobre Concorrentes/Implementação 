@@ -1,0 +1,10 @@
+Implementação Superior aos Concorrentes
+Após a análise dos concorrentes, observamos que a maioria das plataformas funciona principalmente como um catálogo de artistas, 
+exigindo que o contratante pesquise diversos perfis até encontrar uma opção adequada. Nossa proposta busca otimizar esse processo 
+por meio de um sistema de recomendação inteligente.
+Ao cadastrar um evento, o usuário informa características como categoria artística, orçamento, localização e data desejada. 
+Com base nessas informações, a plataforma classifica automaticamente os artistas mais compatíveis e apresenta as melhores opções 
+primeiro.
+Dessa forma, o contratante não precisa analisar dezenas de perfis manualmente, tornando a busca mais rápida e eficiente. Essa 
+implementação representa uma melhoria em relação aos concorrentes por oferecer uma experiência mais personalizada e focada nas 
+necessidades de cada evento, sem aumentar a complexidade da utilização da plataforma.
