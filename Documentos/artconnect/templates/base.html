@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}ArtConnect{% endblock %} · ArtConnect</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <header class="header">
+    <a class="logo" href="{{ url_for('index') }}">ArtConnect</a>
+    <nav class="nav" aria-label="Navegação principal">
+      <a class="link" href="{{ url_for('index') }}">Artistas</a>
+      {% if usuario_nome %}
+        <a class="link" href="{{ url_for('painel') }}">Meu painel</a>
+        <a class="link" href="{{ url_for('editar_perfil') }}">Perfil</a>
+        {% if usuario_papel == 'admin' %}
+          <a class="link" href="{{ url_for('listar_usuarios') }}">Usuários</a>
+        {% endif %}
+        <a class="link" href="{{ url_for('logout') }}">Sair</a>
+        <a class="btn btn--dark" href="{{ url_for('orcamento') }}">Pedir orçamento</a>
+      {% else %}
+        <a class="link" href="{{ url_for('login') }}">Entrar</a>
+        <a class="btn btn--dark" href="{{ url_for('cadastro') }}">Criar conta</a>
+      {% endif %}
+    </nav>
+  </header>
+
+  <main class="main {% block main_class %}{% endblock %}">
+    <div class="{% block largura %}container{% endblock %}">
+      {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+          <ul class="flashes" role="status">
+            {% for categoria, texto in mensagens %}
+              <li class="flash flash--{{ categoria }}">{{ texto }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      {% endwith %}
+
+      {% block conteudo %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="footer">
+    © 2026 ArtConnect · Feito para artistas locais no Brasil
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

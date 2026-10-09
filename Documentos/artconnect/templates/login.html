@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block main_class %}main--center{% endblock %}
+{% block largura %}narrow{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow">Acesse sua conta</p>
+  <h1 class="title">Entrar no<br>seu painel</h1>
+  <p class="lead">Acompanhe orçamentos, propostas e pagamentos em um só lugar.</p>
+
+  <form class="card card--dark form-grid" action="{{ url_for('login', proximo=request.args.get('proximo', '')) }}" method="post">
+    <div class="field">
+      <label class="lbl" for="username">Usuário</label>
+      <input class="input" id="username" name="username" type="text" value="{{ username }}"
+             placeholder="Seu nome de usuário" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+    </div>
+
+    <div class="field">
+      <div class="label-row">
+        <label for="password">Senha</label>
+        <a class="link-small" href="#">Esqueci a senha</a>
+      </div>
+      <input class="input" id="password" name="password" type="password" placeholder="••••••••"
+             autocomplete="current-password" required>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" name="remember">
+      Manter conectado neste dispositivo
+    </label>
+
+    <button class="btn btn--accent btn--block" type="submit">Entrar</button>
+
+    <p class="below">Ainda não tem conta? <a href="{{ url_for('cadastro') }}">Criar conta</a></p>
+  </form>
+
+  <p class="hint" style="margin-top: 24px"><strong>Pagamento retido</strong> até o dia do evento.</p>
+{% endblock %}

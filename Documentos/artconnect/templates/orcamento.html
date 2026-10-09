@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block titulo %}Pedir orçamento{% endblock %}
+{% block largura %}narrow{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow eyebrow--accent">Pedido de orçamento</p>
+  <h1 class="title title--md">Conte os detalhes<br>do serviço</h1>
+  <p class="lead">Quanto mais preciso o pedido, melhores as propostas. Todos os campos, exceto as observações, são obrigatórios.</p>
+
+  <form class="card form-grid" action="{{ url_for('orcamento') }}" method="post">
+    <div class="row-two">
+      <div class="field">
+        <label class="lbl" for="tipo_evento">Tipo de evento</label>
+        <select class="select" id="tipo_evento" name="tipo_evento">
+          {% for codigo, nome in tipos %}
+            <option value="{{ codigo }}" {% if form.get('tipo_evento') == codigo %}selected{% endif %}>{{ nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="categoria">Tipo de serviço</label>
+        <select class="select" id="categoria" name="categoria" required>
+          <option value="">Selecione…</option>
+          {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if form.get('categoria') == cat.id|string %}selected{% endif %}>{{ cat.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label class="lbl" for="data">Data</label>
+        <input class="input" type="date" id="data" name="data" min="{{ hoje }}" value="{{ form.get('data', '') }}" required>
+      </div>
+      <div class="field">
+        <label class="lbl" for="horario">Horário de início</label>
+        <input class="input" type="time" id="horario" name="horario" value="{{ form.get('horario', '') }}" required>
+      </div>
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label class="lbl" for="duracao">Duração (horas)</label>
+        <input class="input" type="number" id="duracao" name="duracao" min="1" max="24" placeholder="Ex.: 4" value="{{ form.get('duracao', '') }}" required>
+      </div>
+      <div class="field">
+        <label class="lbl" for="convidados">Estimativa de convidados</label>
+        <input class="input" type="number" id="convidados" name="convidados" min="1" placeholder="Ex.: 120" value="{{ form.get('convidados', '') }}" required>
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="local">Local</label>
+      <input class="input" type="text" id="local" name="local" placeholder="Espaço, bairro e cidade" value="{{ form.get('local', '') }}" required minlength="5">
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="observacoes">Observações</label>
+      <textarea class="textarea" id="observacoes" name="observacoes" maxlength="600" placeholder="Estilo desejado, estrutura disponível, restrições de horário…">{{ form.get('observacoes', '') }}</textarea>
+    </div>
+
+    <button type="submit" class="btn btn--accent btn--block">Enviar pedido</button>
+  </form>
+{% endblock %}

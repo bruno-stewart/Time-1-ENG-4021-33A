@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block titulo %}Usuários{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow">Administração</p>
+  <h1 class="title title--md">Usuários cadastrados</h1>
+  <p class="lead">{{ usuarios|length }} usuário(s) encontrado(s).</p>
+
+  <form class="filtros" action="{{ url_for('listar_usuarios') }}" method="get">
+    <input class="input" type="search" name="busca" value="{{ busca }}" placeholder="Buscar por nome, usuário ou e-mail" aria-label="Buscar">
+    <select class="select" name="papel" aria-label="Tipo de conta">
+      <option value="">Todos os tipos</option>
+      <option value="cliente" {% if papel == 'cliente' %}selected{% endif %}>Clientes</option>
+      <option value="artista" {% if papel == 'artista' %}selected{% endif %}>Artistas</option>
+      <option value="admin" {% if papel == 'admin' %}selected{% endif %}>Administradores</option>
+    </select>
+    <button class="btn btn--dark" type="submit">Filtrar</button>
+  </form>
+
+  {% if usuarios %}
+    <div class="tabela-wrap">
+      <table>
+        <thead>
+          <tr><th>Usuário</th><th>Nome</th><th>E-mail</th><th>Cidade</th><th>Tipo</th><th>Desde</th></tr>
+        </thead>
+        <tbody>
+          {% for u in usuarios %}
+            <tr>
+              <td>{{ u.username }}</td>
+              <td>{{ u.nome }}</td>
+              <td>{{ u.email }}</td>
+              <td>{{ u.cidade or '—' }}</td>
+              <td><span class="status">{{ u.papel }}</span></td>
+              <td>{{ u.criado_em|data_br }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="vazio">Nenhum usuário encontrado.</p>
+  {% endif %}
+{% endblock %}
