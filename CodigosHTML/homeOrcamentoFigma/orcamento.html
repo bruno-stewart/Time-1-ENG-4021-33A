@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedir orçamento – Palco Certo</title>
+  <style>
+    :root {
+      --ink: #2a1838;
+      --saffron: #f2b632;
+      --teal: #1e8c86;
+      --soft: #f5f2fa;
+      --text: #2b2433;
+      --muted: #6b6475;
+      --erro: #b3261e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, "Times New Roman", serif; color: var(--text); background: var(--soft); line-height: 1.6; }
+    h1, h2, .btn, nav a, label, select, input, textarea, button, dt { font-family: "Trebuchet MS", Arial, sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 720px; margin: 0 auto; padding: 0 20px; }
+    :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+    header { background: var(--ink); color: #fff; }
+    header .container { max-width: 1100px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .logo { font-family: "Trebuchet MS", Arial, sans-serif; font-weight: bold; font-size: 1.25rem; }
+    nav a:hover { color: var(--saffron); }
+
+    main { padding: 40px 0 64px; }
+    h1 { font-size: 1.9rem; color: var(--ink); margin-bottom: 8px; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+
+    .painel { background: #fff; border-radius: 10px; padding: 28px; box-shadow: 0 2px 12px rgba(0,0,0,.08); }
+    .campo { margin-bottom: 18px; }
+    .linha-dupla { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    label { display: block; font-weight: bold; margin-bottom: 6px; font-size: .95rem; }
+    select, input, textarea { width: 100%; padding: 11px; border: 1px solid #c9c2d3; border-radius: 6px; font-size: 1rem; }
+    textarea { min-height: 100px; resize: vertical; }
+    .invalido { border-color: var(--erro); }
+    .erro { color: var(--erro); font-size: .85rem; margin-top: 4px; font-family: "Trebuchet MS", Arial, sans-serif; min-height: 1.2em; }
+
+    .btn { display: inline-block; background: var(--saffron); color: var(--ink); border: 0; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+    .btn.secundario { background: transparent; border: 2px solid var(--ink); margin-left: 8px; }
+
+    /* Confirmação */
+    #confirmacao { display: none; }
+    #confirmacao h1 { color: var(--teal); }
+    dl { margin: 20px 0; }
+    dl div { display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #eee7f5; }
+    dt { flex: 0 0 160px; font-weight: bold; color: var(--ink); }
+    dd { flex: 1; }
+
+    @media (max-width: 560px) {
+      .linha-dupla { grid-template-columns: 1fr; gap: 0; }
+      dl div { flex-direction: column; gap: 2px; }
+      dt { flex-basis: auto; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <a href="index.html" class="logo">Palco Certo</a>
+      <nav><a href="index.html">Voltar para a home</a></nav>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- Formulário -->
+    <section id="formulario">
+      <h1>Peça seu orçamento</h1>
+      <p class="sub">Conte como será o evento e receba propostas de talentos disponíveis.</p>
+
+      <form class="painel" id="form" novalidate>
+        <div class="campo">
+          <label for="servico">Tipo de serviço *</label>
+          <select id="servico" name="servico" required>
+            <option value="">Selecione…</option>
+            <option>Cantor(a)</option>
+            <option>DJ</option>
+            <option>Chef &amp; Buffet</option>
+            <option>Mágico(a)</option>
+            <option>Foto &amp; Vídeo</option>
+          </select>
+          <div class="erro" id="erro-servico"></div>
+        </div>
+
+        <div class="linha-dupla">
+          <div class="campo">
+            <label for="data">Data do evento *</label>
+            <input type="date" id="data" name="data" required>
+            <div class="erro" id="erro-data"></div>
+          </div>
+          <div class="campo">
+            <label for="horario">Horário de início *</label>
+            <input type="time" id="horario" name="horario" required>
+            <div class="erro" id="erro-horario"></div>
+          </div>
+        </div>
+
+        <div class="linha-dupla">
+          <div class="campo">
+            <label for="duracao">Duração (horas) *</label>
+            <input type="number" id="duracao" name="duracao" min="1" max="24" step="1" required>
+            <div class="erro" id="erro-duracao"></div>
+          </div>
+          <div class="campo">
+            <label for="convidados">Estimativa de convidados *</label>
+            <input type="number" id="convidados" name="convidados" min="1" step="1" required>
+            <div class="erro" id="erro-convidados"></div>
+          </div>
+        </div>
+
+        <div class="campo">
+          <label for="local">Local do evento *</label>
+          <input type="text" id="local" name="local" placeholder="Endereço ou nome do espaço, cidade" required>
+          <div class="erro" id="erro-local"></div>
+        </div>
+
+        <div class="campo">
+          <label for="obs">Observações</label>
+          <textarea id="obs" name="obs" placeholder="Estilo musical, restrições alimentares, detalhes importantes…"></textarea>
+        </div>
+
+        <button type="submit" class="btn">Enviar pedido de orçamento</button>
+      </form>
+    </section>
+
+    <!-- Tela de confirmação -->
+    <section id="confirmacao" aria-live="polite">
+      <div class="painel">
+        <h1>Pedido enviado!</h1>
+        <p>Você receberá as propostas por e-mail em até 24 horas. Confira o resumo:</p>
+        <dl id="resumo"></dl>
+        <a href="index.html" class="btn">Voltar para a home</a>
+        <button type="button" class="btn secundario" id="novo">Fazer outro pedido</button>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    const form = document.getElementById('form');
+    const formulario = document.getElementById('formulario');
+    const confirmacao = document.getElementById('confirmacao');
+
+    // Data mínima: hoje
+    const hoje = new Date().toISOString().split('T')[0];
+    document.getElementById('data').min = hoje;
+
+    // Regras de validação: campo -> função que devolve a mensagem de erro (ou '')
+    const regras = {
+      servico:    v => v ? '' : 'Escolha o tipo de serviço.',
+      data:       v => !v ? 'Informe a data do evento.' : (v < hoje ? 'A data não pode estar no passado.' : ''),
+      horario:    v => v ? '' : 'Informe o horário de início.',
+      duracao:    v => (v >= 1 && v <= 24) ? '' : 'Informe uma duração entre 1 e 24 horas.',
+      convidados: v => (v >= 1) ? '' : 'Informe pelo menos 1 convidado.',
+      local:      v => v.trim().length >= 5 ? '' : 'Informe o local com pelo menos 5 caracteres.'
+    };
+
+    function validarCampo(nome) {
+      const campo = form.elements[nome];
+      const msg = regras[nome](campo.value);
+      document.getElementById('erro-' + nome).textContent = msg;
+      campo.classList.toggle('invalido', msg !== '');
+      campo.setAttribute('aria-invalid', msg !== '');
+      return msg === '';
+    }
+
+    // Valida ao sair do campo
+    Object.keys(regras).forEach(nome => {
+      form.elements[nome].addEventListener('blur', () => validarCampo(nome));
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      let tudoOk = true;
+      let primeiroErro = null;
+      Object.keys(regras).forEach(nome => {
+        if (!validarCampo(nome)) {
+          tudoOk = false;
+          if (!primeiroErro) primeiroErro = form.elements[nome];
+        }
+      });
+      if (!tudoOk) { primeiroErro.focus(); return; }
+      mostrarConfirmacao();
+    });
+
+    function formatarData(iso) {
+      const [a, m, d] = iso.split('-');
+      return `${d}/${m}/${a}`;
+    }
+
+    function mostrarConfirmacao() {
+      const f = form.elements;
+      const itens = [
+        ['Tipo de serviço', f.servico.value],
+        ['Data', formatarData(f.data.value)],
+        ['Horário', f.horario.value],
+        ['Duração', f.duracao.value + (f.duracao.value == 1 ? ' hora' : ' horas')],
+        ['Convidados', f.convidados.value],
+        ['Local', f.local.value],
+        ['Observações', f.obs.value.trim() || '—']
+      ];
+      const resumo = document.getElementById('resumo');
+      resumo.innerHTML = '';
+      itens.forEach(([titulo, valor]) => {
+        const linha = document.createElement('div');
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        dt.textContent = titulo;
+        dd.textContent = valor; // textContent evita injeção de HTML
+        linha.append(dt, dd);
+        resumo.appendChild(linha);
+      });
+      formulario.style.display = 'none';
+      confirmacao.style.display = 'block';
+      window.scrollTo({ top: 0 });
+    }
+
+    document.getElementById('novo').addEventListener('click', () => {
+      form.reset();
+      confirmacao.style.display = 'none';
+      formulario.style.display = 'block';
+    });
+  </script>
+</body>
+</html>

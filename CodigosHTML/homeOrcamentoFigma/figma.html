@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu painel – Palco Certo</title>
+  <style>
+    :root {
+      --ink: #2a1838;
+      --saffron: #f2b632;
+      --teal: #1e8c86;
+      --soft: #f5f2fa;
+      --text: #2b2433;
+      --muted: #6b6475;
+      --erro: #b3261e;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, "Times New Roman", serif; color: var(--text); background: var(--soft); line-height: 1.6; }
+    h1, h2, h3, .btn, nav a, label, input, button, th, .menu button { font-family: "Trebuchet MS", Arial, sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+    /* Cabeçalho */
+    header { background: var(--ink); color: #fff; }
+    header .barra { max-width: 1100px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .logo { font-family: "Trebuchet MS", Arial, sans-serif; font-weight: bold; font-size: 1.25rem; }
+    .usuario { font-family: "Trebuchet MS", Arial, sans-serif; font-size: .95rem; }
+    .usuario a { margin-left: 16px; text-decoration: underline; }
+
+    /* Layout: menu lateral + conteúdo */
+    .layout { max-width: 1100px; margin: 0 auto; padding: 28px 20px 64px; display: grid; grid-template-columns: 220px 1fr; gap: 28px; }
+    .menu { display: flex; flex-direction: column; gap: 6px; align-self: start; }
+    .menu button { text-align: left; background: #fff; border: 1px solid #e3dded; border-radius: 8px; padding: 12px 14px; font-size: 1rem; cursor: pointer; color: var(--ink); }
+    .menu button:hover { background: #ece6f6; }
+    .menu button.ativo { background: var(--ink); color: #fff; border-color: var(--ink); }
+
+    h1 { font-size: 1.7rem; color: var(--ink); margin-bottom: 4px; }
+    .sub { color: var(--muted); margin-bottom: 24px; }
+    h2 { font-size: 1.2rem; color: var(--ink); margin-bottom: 14px; }
+    .secao { display: none; }
+    .secao.visivel { display: block; }
+    .painel { background: #fff; border-radius: 10px; padding: 22px; box-shadow: 0 2px 12px rgba(0,0,0,.07); margin-bottom: 22px; }
+
+    /* Cartões de resumo */
+    .resumo { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 16px; margin-bottom: 22px; }
+    .numero { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 12px rgba(0,0,0,.07); border-top: 4px solid var(--teal); }
+    .numero strong { display: block; font-family: "Trebuchet MS", Arial, sans-serif; font-size: 2rem; color: var(--ink); }
+    .numero span { color: var(--muted); font-size: .95rem; }
+
+    /* Tabela */
+    .tabela-rolagem { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 520px; }
+    th, td { text-align: left; padding: 12px 10px; border-bottom: 1px solid #eee7f5; }
+    th { font-size: .9rem; color: var(--muted); }
+    .status { display: inline-block; padding: 2px 10px; border-radius: 20px; font-family: "Trebuchet MS", Arial, sans-serif; font-size: .85rem; font-weight: bold; }
+    .st-aguardando { background: #fff1cc; color: #7a5600; }
+    .st-recebida { background: #d9f1ef; color: #0f5f5a; }
+    .st-confirmado { background: #dff3df; color: #1d5e20; }
+    .st-recusado { background: #fadcd9; color: var(--erro); }
+
+    /* Propostas */
+    .proposta { display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap; padding: 16px 0; border-bottom: 1px solid #eee7f5; }
+    .proposta:last-child { border-bottom: 0; }
+    .proposta h3 { font-size: 1.05rem; color: var(--ink); }
+    .proposta p { color: var(--muted); font-size: .92rem; }
+    .acoes { display: flex; gap: 8px; align-items: center; }
+
+    /* Botões e formulário */
+    .btn { display: inline-block; background: var(--saffron); color: var(--ink); border: 0; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: .95rem; cursor: pointer; }
+    .btn.secundario { background: transparent; border: 2px solid var(--ink); padding: 8px 18px; }
+    .btn[disabled] { opacity: .5; cursor: not-allowed; }
+    label { display: block; font-weight: bold; margin-bottom: 6px; font-size: .95rem; }
+    input { width: 100%; padding: 11px; border: 1px solid #c9c2d3; border-radius: 6px; font-size: 1rem; margin-bottom: 16px; }
+    .msg-ok { color: #1d5e20; font-family: "Trebuchet MS", Arial, sans-serif; margin-left: 12px; }
+
+    @media (max-width: 760px) {
+      .layout { grid-template-columns: 1fr; }
+      .menu { flex-direction: row; flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="barra">
+      <a href="index.html" class="logo">Palco Certo</a>
+      <div class="usuario">Olá, Juliana <a href="index.html">Sair</a></div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- Menu lateral -->
+    <nav class="menu" aria-label="Menu do painel">
+      <button type="button" class="ativo" data-secao="resumo">Resumo</button>
+      <button type="button" data-secao="pedidos">Meus pedidos</button>
+      <button type="button" data-secao="propostas">Propostas recebidas</button>
+      <button type="button" data-secao="perfil">Meu perfil</button>
+    </nav>
+
+    <main>
+
+      <!-- Resumo -->
+      <section id="resumo" class="secao visivel">
+        <h1>Meu painel</h1>
+        <p class="sub">Acompanhe seus pedidos de orçamento e eventos.</p>
+
+        <div class="resumo">
+          <div class="numero"><strong>3</strong><span>Pedidos em aberto</span></div>
+          <div class="numero"><strong>2</strong><span>Propostas para analisar</span></div>
+          <div class="numero"><strong>1</strong><span>Evento confirmado</span></div>
+        </div>
+
+        <div class="painel">
+          <h2>Próximo evento</h2>
+          <p><strong>Casamento</strong> – Marina Duarte (cantora)</p>
+          <p>20/12/2026, às 19:00 · Rio de Janeiro</p>
+        </div>
+
+        <a href="orcamento.html" class="btn">Pedir novo orçamento</a>
+      </section>
+
+      <!-- Meus pedidos -->
+      <section id="pedidos" class="secao">
+        <h1>Meus pedidos</h1>
+        <p class="sub">Todos os orçamentos que você já enviou.</p>
+        <div class="painel tabela-rolagem">
+          <table>
+            <thead>
+              <tr><th>Serviço</th><th>Data do evento</th><th>Convidados</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Cantor(a)</td><td>20/12/2026</td><td>120</td><td><span class="status st-confirmado">Confirmado</span></td></tr>
+              <tr><td>Foto &amp; Vídeo</td><td>20/12/2026</td><td>120</td><td><span class="status st-recebida">Propostas recebidas</span></td></tr>
+              <tr><td>Chef &amp; Buffet</td><td>20/12/2026</td><td>120</td><td><span class="status st-recebida">Propostas recebidas</span></td></tr>
+              <tr><td>DJ</td><td>20/12/2026</td><td>120</td><td><span class="status st-aguardando">Aguardando</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Propostas recebidas -->
+      <section id="propostas" class="secao">
+        <h1>Propostas recebidas</h1>
+        <p class="sub">Aceite ou recuse as propostas dos talentos.</p>
+        <div class="painel">
+
+          <div class="proposta">
+            <div>
+              <h3>Estúdio Lume</h3>
+              <p>Foto &amp; Vídeo · 20/12/2026 · R$ 2.400</p>
+              <span class="status st-recebida">Aguardando sua resposta</span>
+            </div>
+            <div class="acoes">
+              <button type="button" class="btn" data-acao="aceitar">Aceitar</button>
+              <button type="button" class="btn secundario" data-acao="recusar">Recusar</button>
+            </div>
+          </div>
+
+          <div class="proposta">
+            <div>
+              <h3>Chef Helena Prado</h3>
+              <p>Chef &amp; Buffet · 20/12/2026 · R$ 90 por pessoa</p>
+              <span class="status st-recebida">Aguardando sua resposta</span>
+            </div>
+            <div class="acoes">
+              <button type="button" class="btn" data-acao="aceitar">Aceitar</button>
+              <button type="button" class="btn secundario" data-acao="recusar">Recusar</button>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Perfil -->
+      <section id="perfil" class="secao">
+        <h1>Meu perfil</h1>
+        <p class="sub">Mantenha seus dados atualizados para receber as propostas.</p>
+        <form class="painel" id="form-perfil">
+          <label for="nome">Nome</label>
+          <input type="text" id="nome" value="Juliana Ribeiro">
+
+          <label for="email">E-mail</label>
+          <input type="email" id="email" value="juliana@exemplo.com">
+
+          <label for="telefone">Telefone</label>
+          <input type="tel" id="telefone" value="(21) 99999-0000">
+
+          <label for="cidade">Cidade</label>
+          <input type="text" id="cidade" value="Rio de Janeiro">
+
+          <button type="submit" class="btn">Salvar alterações</button>
+          <span class="msg-ok" id="msg-perfil" role="status"></span>
+        </form>
+      </section>
+
+    </main>
+  </div>
+
+  <script>
+    // Troca de seções pelo menu lateral
+    const botoes = document.querySelectorAll('.menu button');
+    const secoes = document.querySelectorAll('.secao');
+
+    botoes.forEach(botao => {
+      botao.addEventListener('click', () => {
+        botoes.forEach(b => b.classList.remove('ativo'));
+        secoes.forEach(s => s.classList.remove('visivel'));
+        botao.classList.add('ativo');
+        document.getElementById(botao.dataset.secao).classList.add('visivel');
+      });
+    });
+
+    // Aceitar / recusar propostas
+    document.querySelectorAll('.proposta').forEach(proposta => {
+      const status = proposta.querySelector('.status');
+      const botoesProposta = proposta.querySelectorAll('button');
+
+      botoesProposta.forEach(botao => {
+        botao.addEventListener('click', () => {
+          const aceitou = botao.dataset.acao === 'aceitar';
+          status.textContent = aceitou ? 'Proposta aceita' : 'Proposta recusada';
+          status.className = 'status ' + (aceitou ? 'st-confirmado' : 'st-recusado');
+          botoesProposta.forEach(b => b.disabled = true);
+        });
+      });
+    });
+
+    // Salvar perfil (só mostra a mensagem; falta ligar a um back-end)
+    document.getElementById('form-perfil').addEventListener('submit', e => {
+      e.preventDefault();
+      const msg = document.getElementById('msg-perfil');
+      msg.textContent = 'Dados salvos!';
+      setTimeout(() => msg.textContent = '', 3000);
+    });
+  </script>
+</body>
+</html>

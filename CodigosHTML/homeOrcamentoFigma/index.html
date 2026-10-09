@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Palco Certo – Talentos para o seu evento</title>
+  <style>
+    :root {
+      --ink: #2a1838;
+      --plum: #3b1f4a;
+      --saffron: #f2b632;
+      --teal: #1e8c86;
+      --bg: #ffffff;
+      --soft: #f5f2fa;
+      --text: #2b2433;
+      --muted: #6b6475;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: Georgia, "Times New Roman", serif; color: var(--text); background: var(--bg); line-height: 1.6; }
+    h1, h2, h3, .btn, nav a, label, select, input, button { font-family: "Trebuchet MS", Arial, sans-serif; }
+    a { color: inherit; text-decoration: none; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+    section { padding: 56px 0; }
+    h2 { font-size: 1.7rem; margin-bottom: 24px; color: var(--ink); }
+
+    /* Cabeçalho */
+    header { background: var(--ink); color: #fff; }
+    header .container { display: flex; justify-content: space-between; align-items: center; height: 64px; }
+    .logo { font-family: "Trebuchet MS", Arial, sans-serif; font-weight: bold; font-size: 1.25rem; }
+    nav a { margin-left: 20px; font-size: .95rem; }
+    nav a:hover, nav a:focus-visible { color: var(--saffron); }
+
+    /* Botões */
+    .btn { display: inline-block; background: var(--saffron); color: var(--ink); border: 0; padding: 12px 24px; border-radius: 6px; font-weight: bold; font-size: 1rem; cursor: pointer; }
+    .btn:hover { filter: brightness(.95); }
+    :focus-visible { outline: 3px solid var(--teal); outline-offset: 2px; }
+
+    /* Banner principal */
+    .hero { background: linear-gradient(135deg, var(--plum), #1a0f24); color: #fff; padding: 80px 0; }
+    .hero .container { display: grid; grid-template-columns: 1.1fr 1fr; gap: 40px; align-items: center; }
+    .hero h1 { font-size: 2.6rem; line-height: 1.15; margin-bottom: 16px; }
+    .hero p { font-size: 1.1rem; margin-bottom: 28px; color: #e8dff0; max-width: 46ch; }
+    /* Troque este bloco por <img src="foto-evento.jpg" alt="..."> */
+    .hero-foto { min-height: 300px; border-radius: 12px; background: linear-gradient(160deg, var(--teal), var(--plum)); display: flex; align-items: center; justify-content: center; color: #fff; text-align: center; padding: 20px; }
+
+    /* Busca rápida */
+    .busca { margin-top: -32px; position: relative; z-index: 2; }
+    .busca form { background: #fff; border-radius: 10px; padding: 20px; display: grid; grid-template-columns: 1fr 1fr auto; gap: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); }
+    .busca select, .busca input { padding: 12px; border: 1px solid #c9c2d3; border-radius: 6px; font-size: 1rem; width: 100%; }
+
+    /* Categorias */
+    .categorias { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+    .categoria { background: var(--soft); border-radius: 10px; padding: 24px 12px; text-align: center; font-family: "Trebuchet MS", Arial, sans-serif; font-weight: bold; color: var(--ink); }
+    .categoria:hover { background: var(--saffron); }
+    .categoria span { display: block; font-size: 2rem; }
+
+    /* Carrossel */
+    .carrossel-topo { display: flex; justify-content: space-between; align-items: center; }
+    .setas button { background: var(--ink); color: #fff; border: 0; width: 40px; height: 40px; border-radius: 50%; font-size: 1.1rem; cursor: pointer; margin-left: 8px; }
+    .trilho { display: flex; gap: 18px; overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 12px; scroll-behavior: smooth; }
+    .card { flex: 0 0 260px; scroll-snap-align: start; border: 1px solid #e3dded; border-radius: 10px; overflow: hidden; background: #fff; }
+    .card .foto { height: 160px; background: linear-gradient(135deg, var(--plum), var(--teal)); } /* troque por <img> */
+    .card .info { padding: 14px; }
+    .card h3 { font-size: 1.05rem; color: var(--ink); }
+    .card .cat { color: var(--muted); font-size: .9rem; }
+    .card .linha { display: flex; justify-content: space-between; margin-top: 10px; font-family: "Trebuchet MS", Arial, sans-serif; }
+    .nota { color: #b07d00; font-weight: bold; }
+
+    /* Depoimentos */
+    .depoimentos-fundo { background: var(--soft); }
+    .depoimentos { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+    blockquote { background: #fff; border-left: 4px solid var(--teal); padding: 20px; border-radius: 6px; }
+    blockquote footer { margin-top: 12px; font-family: "Trebuchet MS", Arial, sans-serif; font-size: .9rem; color: var(--muted); }
+
+    footer.rodape { background: var(--ink); color: #cfc5da; text-align: center; padding: 28px 0; font-size: .9rem; }
+
+    @media (max-width: 760px) {
+      .hero .container { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 2rem; }
+      .busca form { grid-template-columns: 1fr; }
+      nav a { margin-left: 12px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .trilho { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="container">
+      <a href="/" class="logo">Palco Certo</a>
+      <nav>
+        <a href="#categorias">Categorias</a>
+        <a href="#destaques">Talentos</a>
+        <a href="#depoimentos">Depoimentos</a>
+        <a href="orcamento.html">Orçamento</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <!-- Banner principal -->
+    <section class="hero">
+      <div class="container">
+        <div>
+          <h1>O talento certo para o seu evento, sem complicação</h1>
+          <p>Encontre cantores, DJs, chefs, mágicos e fotógrafos avaliados por quem já contratou. Peça um orçamento em minutos.</p>
+          <a href="orcamento.html" class="btn">Pedir orçamento grátis</a>
+        </div>
+        <div class="hero-foto" role="img" aria-label="Foto de um evento">Foto de evento aqui</div>
+      </div>
+    </section>
+
+    <!-- Busca rápida -->
+    <div class="busca">
+      <div class="container">
+        <form action="orcamento.html" method="get">
+          <select name="categoria" aria-label="Categoria">
+            <option value="">Todas as categorias</option>
+            <option>Cantores</option>
+            <option>DJs</option>
+            <option>Chefs &amp; Buffet</option>
+            <option>Mágicos</option>
+            <option>Foto &amp; Vídeo</option>
+          </select>
+          <input type="text" name="cidade" placeholder="Cidade (ex.: Rio de Janeiro)" aria-label="Cidade">
+          <button class="btn" type="submit">Buscar talentos</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Categorias -->
+    <section id="categorias">
+      <div class="container">
+        <h2>Para cada tipo de festa</h2>
+        <div class="categorias">
+          <a href="#" class="categoria"><span>🎤</span>Cantores</a>
+          <a href="#" class="categoria"><span>🎧</span>DJs</a>
+          <a href="#" class="categoria"><span>🍽️</span>Chefs &amp; Buffet</a>
+          <a href="#" class="categoria"><span>🎩</span>Mágicos</a>
+          <a href="#" class="categoria"><span>📷</span>Foto &amp; Vídeo</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Talentos em destaque -->
+    <section id="destaques" style="padding-top:0">
+      <div class="container">
+        <div class="carrossel-topo">
+          <h2>Talentos em destaque</h2>
+          <div class="setas">
+            <button type="button" id="anterior" aria-label="Anterior">‹</button>
+            <button type="button" id="proximo" aria-label="Próximo">›</button>
+          </div>
+        </div>
+        <div class="trilho" id="trilho">
+          <article class="card">
+            <div class="foto"></div>
+            <div class="info">
+              <h3>Marina Duarte</h3>
+              <div class="cat">Cantora · MPB e Pop</div>
+              <div class="linha"><span class="nota">★ 4,9 (128)</span><span>a partir de R$ 1.800</span></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="foto"></div>
+            <div class="info">
+              <h3>DJ Caio Lemos</h3>
+              <div class="cat">DJ · Casamentos e festas</div>
+              <div class="linha"><span class="nota">★ 4,8 (96)</span><span>a partir de R$ 1.200</span></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="foto"></div>
+            <div class="info">
+              <h3>Chef Helena Prado</h3>
+              <div class="cat">Chef · Jantar e buffet</div>
+              <div class="linha"><span class="nota">★ 5,0 (54)</span><span>a partir de R$ 90/pessoa</span></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="foto"></div>
+            <div class="info">
+              <h3>Mago Teo</h3>
+              <div class="cat">Mágico · Festas infantis</div>
+              <div class="linha"><span class="nota">★ 4,7 (73)</span><span>a partir de R$ 700</span></div>
+            </div>
+          </article>
+          <article class="card">
+            <div class="foto"></div>
+            <div class="info">
+              <h3>Estúdio Lume</h3>
+              <div class="cat">Foto &amp; Vídeo · Eventos</div>
+              <div class="linha"><span class="nota">★ 4,9 (110)</span><span>a partir de R$ 2.200</span></div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Depoimentos -->
+    <section id="depoimentos" class="depoimentos-fundo">
+      <div class="container">
+        <h2>Quem contratou recomenda</h2>
+        <div class="depoimentos">
+          <blockquote>
+            <p>Pedi orçamento de manhã e à tarde já tinha três propostas. A cantora fez o casamento ser inesquecível.</p>
+            <footer>Juliana R., casamento no Rio de Janeiro</footer>
+          </blockquote>
+          <blockquote>
+            <p>O mágico segurou a atenção de 40 crianças por uma hora inteira. Valeu cada centavo.</p>
+            <footer>Rafael M., aniversário infantil</footer>
+          </blockquote>
+          <blockquote>
+            <p>Contratamos chef e DJ pelo mesmo site, tudo combinado sem dor de cabeça.</p>
+            <footer>Empresa Vértice, confraternização</footer>
+          </blockquote>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="rodape">
+    <div class="container">© 2026 Palco Certo. Todos os direitos reservados.</div>
+  </footer>
+
+  <script>
+    // Setas do carrossel
+    const trilho = document.getElementById('trilho');
+    const passo = 280;
+    document.getElementById('anterior').addEventListener('click', () => trilho.scrollBy({ left: -passo }));
+    document.getElementById('proximo').addEventListener('click', () => trilho.scrollBy({ left: passo }));
+  </script>
+</body>
+</html>
