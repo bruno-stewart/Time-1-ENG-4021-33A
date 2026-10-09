@@ -1,0 +1,102 @@
+{% extends "base.html" %}
+{% block titulo %}Meu painel{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow">Painel do cliente</p>
+  <h1 class="title title--md">Olá, {{ usuario_nome.split(' ')[0] }}</h1>
+  <p class="lead">Seus eventos, contratos e pagamentos em um só lugar.</p>
+
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Próximos eventos</span><strong>{{ indicadores.proximos_eventos }}</strong><span>agendados e confirmados</span></div>
+    <div class="kpi"><span class="lbl">Valor retido</span><strong>{{ indicadores.valor_retido|moeda }}</strong><span>liberado após cada evento</span></div>
+    <div class="kpi"><span class="lbl">Total contratado</span><strong>{{ indicadores.total_contratado|moeda }}</strong><span>em todos os contratos</span></div>
+    <div class="kpi"><span class="lbl">Mensagens novas</span><strong>{{ indicadores.mensagens_novas }}</strong><span>de artistas contratados</span></div>
+  </div>
+
+  <nav class="tabs" aria-label="Seções do painel">
+    <a class="tab {% if aba == 'historico' %}ativo{% endif %}" href="{{ url_for('painel', aba='historico') }}">Histórico</a>
+    <a class="tab {% if aba == 'pagamentos' %}ativo{% endif %}" href="{{ url_for('painel', aba='pagamentos') }}">Pagamentos</a>
+    <a class="tab {% if aba == 'pedidos' %}ativo{% endif %}" href="{{ url_for('painel', aba='pedidos') }}">Pedidos de orçamento</a>
+    <a class="tab {% if aba == 'mensagens' %}ativo{% endif %}" href="{{ url_for('painel', aba='mensagens') }}">
+      Mensagens{% if indicadores.mensagens_novas > 0 %}<span class="badge">{{ indicadores.mensagens_novas }}</span>{% endif %}
+    </a>
+  </nav>
+
+  {% if aba == 'historico' %}
+    <h2 class="section-title">Serviços contratados</h2>
+    {% if contratos %}
+      <div class="lista">
+        {% for c in contratos %}
+          <div class="item">
+            <div>
+              <h3>{{ c.nome_artistico }}</h3>
+              <p>{{ c.descricao or c.estilo }} · {{ c.tipo|tipo_evento }}</p>
+              <p>{{ c.data_evento|data_br }} · {{ c.local }}</p>
+            </div>
+            <span class="valor">{{ c.valor_total|moeda }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="vazio">Você ainda não contratou nenhum artista.</p>
+    {% endif %}
+
+  {% elif aba == 'pagamentos' %}
+    <h2 class="section-title">Status dos pagamentos</h2>
+    {% if contratos %}
+      <div class="lista">
+        {% for c in contratos %}
+          <div class="item">
+            <div>
+              <h3>{{ c.nome_artistico }}</h3>
+              <p>{{ c.tipo|tipo_evento }} · {{ c.data_evento|data_br }}</p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 14px">
+              <span class="valor">{{ c.valor_total|moeda }}</span>
+              <span class="status status--{{ c.status_pagamento }}">{{ c.status_pagamento|status_pagamento }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+      <p class="hint" style="margin-top: 16px">Os valores retidos são liberados ao artista após você confirmar a apresentação.</p>
+    {% else %}
+      <p class="vazio">Nenhum pagamento registrado.</p>
+    {% endif %}
+
+  {% elif aba == 'pedidos' %}
+    <h2 class="section-title">Pedidos de orçamento</h2>
+    {% if pedidos %}
+      <div class="lista">
+        {% for p in pedidos %}
+          <div class="item">
+            <div>
+              <h3>{{ p.categoria }}</h3>
+              <p>{{ p.tipo|tipo_evento }} · {{ p.data_evento|data_br }} às {{ p.horario_inicio.strftime('%H:%M') }} · {{ p.estimativa_convidados }} convidados</p>
+              <p>{{ p.local }}</p>
+            </div>
+            <span class="status">{{ p.status|replace('_', ' ') }}</span>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="vazio">Você ainda não fez nenhum pedido.</p>
+    {% endif %}
+    <p style="margin-top: 24px"><a class="btn btn--accent" href="{{ url_for('orcamento') }}">Pedir novo orçamento</a></p>
+
+  {% elif aba == 'mensagens' %}
+    <h2 class="section-title">Conversas</h2>
+    {% if mensagens %}
+      <div class="chat">
+        {% for m in mensagens %}
+          <div class="msg {% if m.remetente_id|string == usuario_id %}msg--minha{% endif %}">
+            {% if m.remetente_id|string != usuario_id %}<strong>{{ m.remetente }}</strong><br>{% endif %}
+            {{ m.conteudo }}
+            <small>{{ m.enviada_em.strftime('%d/%m %H:%M') }}</small>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p class="vazio">Nenhuma mensagem ainda.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
