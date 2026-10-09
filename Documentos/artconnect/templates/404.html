@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block titulo %}Página não encontrada{% endblock %}
+{% block largura %}narrow{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow eyebrow--accent">Erro 404</p>
+  <h1 class="title">Página não<br>encontrada</h1>
+  <p class="lead">O endereço que você tentou acessar não existe.</p>
+  <a class="btn btn--accent" href="{{ url_for('index') }}">Voltar para o início</a>
+{% endblock %}

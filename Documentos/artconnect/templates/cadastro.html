@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block titulo %}Criar conta{% endblock %}
+{% block largura %}narrow{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow">Criar conta</p>
+  <h1 class="title title--md">Entre para a<br>ArtConnect</h1>
+  <p class="lead">Contrate talentos locais ou apresente o seu trabalho para quem procura artistas.</p>
+
+  <form class="card form-grid" action="{{ url_for('cadastro') }}" method="post">
+    <fieldset>
+      <legend class="lbl">Eu quero</legend>
+      <div class="choices">
+        <label class="choice">
+          <input type="radio" name="tipo" value="contratante" {% if form.get('tipo', 'contratante') != 'artista' %}checked{% endif %}>
+          <span>Contratar<small>Tenho um evento</small></span>
+        </label>
+        <label class="choice">
+          <input type="radio" name="tipo" value="artista" {% if form.get('tipo') == 'artista' %}checked{% endif %}>
+          <span>Ser contratado<small>Sou artista</small></span>
+        </label>
+      </div>
+    </fieldset>
+
+    <div class="field">
+      <label class="lbl" for="username">Usuário</label>
+      <input class="input" type="text" id="username" name="username" value="{{ form.get('username', '') }}"
+             autocomplete="username" autocapitalize="none" placeholder="Ex.: maria.souza" required minlength="3">
+      <p class="hint">É com ele que você vai entrar na plataforma.</p>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="nome">Nome completo</label>
+      <input class="input" type="text" id="nome" name="nome" value="{{ form.get('nome', '') }}"
+             autocomplete="name" placeholder="Ex.: Maria Souza" required minlength="3">
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="email">E-mail</label>
+      <input class="input" type="email" id="email" name="email" value="{{ form.get('email', '') }}"
+             autocomplete="email" placeholder="voce@email.com" required>
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label class="lbl" for="telefone">Telefone / WhatsApp</label>
+        <input class="input" type="tel" id="telefone" name="telefone" value="{{ form.get('telefone', '') }}"
+               autocomplete="tel" inputmode="tel" placeholder="(21) 99999-9999">
+      </div>
+      <div class="field">
+        <label class="lbl" for="cidade">Cidade</label>
+        <input class="input" type="text" id="cidade" name="cidade" value="{{ form.get('cidade', '') }}"
+               autocomplete="address-level2" placeholder="Ex.: Rio de Janeiro" required>
+      </div>
+    </div>
+
+    <div class="row-two so-artista" id="campos-artista">
+      <div class="field">
+        <label class="lbl" for="categoria">Categoria</label>
+        <select class="select" id="categoria" name="categoria">
+          <option value="">Selecione…</option>
+          {% for cat in categorias %}
+            <option value="{{ cat.id }}" {% if form.get('categoria') == cat.id|string %}selected{% endif %}>{{ cat.nome }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label class="lbl" for="preco">Cachê a partir de (R$)</label>
+        <input class="input" type="text" id="preco" name="preco" value="{{ form.get('preco', '') }}" inputmode="decimal" placeholder="Ex.: 800">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="senha">Senha</label>
+      <input class="input" type="password" id="senha" name="senha" autocomplete="new-password" placeholder="Mínimo de 8 caracteres" required minlength="8">
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="confirmar">Confirmar senha</label>
+      <input class="input" type="password" id="confirmar" name="confirmar" autocomplete="new-password" placeholder="Repita a senha" required>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" name="termos" required {% if form.get('termos') == 'on' %}checked{% endif %}>
+      <span>Li e aceito os Termos de Uso e a Política de Privacidade.</span>
+    </label>
+
+    <button type="submit" class="btn btn--accent btn--block">Criar conta</button>
+    <p class="below">Já tem conta? <a href="{{ url_for('login') }}">Entrar</a></p>
+  </form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Mostra os campos de artista só quando "Ser contratado" estiver marcado
+  var camposArtista = document.getElementById("campos-artista");
+  var radios = document.querySelectorAll('input[name="tipo"]');
+  function atualizarCampos() {
+    var artista = document.querySelector('input[name="tipo"]:checked').value === "artista";
+    camposArtista.classList.toggle("visivel", artista);
+    document.getElementById("categoria").required = artista;
+  }
+  for (var i = 0; i < radios.length; i++) {
+    radios[i].addEventListener("change", atualizarCampos);
+  }
+  atualizarCampos();
+</script>
+{% endblock %}

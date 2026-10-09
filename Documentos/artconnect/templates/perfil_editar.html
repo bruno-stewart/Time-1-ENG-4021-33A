@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block titulo %}Meu perfil{% endblock %}
+{% block largura %}narrow{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow">Minha conta</p>
+  <h1 class="title title--md">Editar<br>meu perfil</h1>
+  <p class="lead">Mantenha seus dados atualizados para receber as propostas.</p>
+
+  <form class="card form-grid" action="{{ url_for('editar_perfil') }}" method="post">
+    <div class="field">
+      <label class="lbl" for="username">Usuário</label>
+      <input class="input" type="text" id="username" value="{{ usuario.username }}" disabled>
+      <p class="hint">O nome de usuário não pode ser alterado.</p>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="nome">Nome completo</label>
+      <input class="input" type="text" id="nome" name="nome" value="{{ usuario.nome }}" required minlength="3">
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="email">E-mail</label>
+      <input class="input" type="email" id="email" name="email" value="{{ usuario.email }}" required>
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label class="lbl" for="telefone">Telefone</label>
+        <input class="input" type="tel" id="telefone" name="telefone" value="{{ usuario.telefone or '' }}">
+      </div>
+      <div class="field">
+        <label class="lbl" for="cidade">Cidade</label>
+        <input class="input" type="text" id="cidade" name="cidade" value="{{ usuario.cidade or '' }}">
+      </div>
+    </div>
+
+    <div class="field">
+      <label class="lbl" for="nova_senha">Nova senha</label>
+      <input class="input" type="password" id="nova_senha" name="nova_senha" autocomplete="new-password" placeholder="Deixe em branco para manter a atual">
+    </div>
+
+    <button type="submit" class="btn btn--accent btn--block">Salvar alterações</button>
+  </form>
+
+  <p class="below"><a href="{{ url_for('excluir_conta') }}" style="color: var(--danger)">Excluir minha conta</a></p>
+{% endblock %}

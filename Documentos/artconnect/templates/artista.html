@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block titulo %}{{ artista.nome_artistico }}{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow eyebrow--accent">{{ artista.categoria }}{% if artista.estilo %} · {{ artista.estilo }}{% endif %}</p>
+  <h1 class="title">{{ artista.nome_artistico }}</h1>
+  <p class="lead">{{ artista.descricao or "Este artista ainda não escreveu uma descrição." }}</p>
+
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Cidade</span><strong>{{ artista.cidade }}</strong></div>
+    <div class="kpi"><span class="lbl">A partir de</span><strong>{{ artista.preco_minimo|moeda }}</strong></div>
+    <div class="kpi"><span class="lbl">Nota geral</span><strong>{{ artista.nota_media or "—" }}</strong><span>{{ artista.total_avaliacoes }} avaliações</span></div>
+  </div>
+
+  <a class="btn btn--accent" href="{{ url_for('orcamento', categoria=artista.categoria_id) }}">Pedir orçamento</a>
+
+  <h2 class="section-title" style="margin-top: 48px">Depoimentos</h2>
+  {% if avaliacoes %}
+    <div class="depoimentos">
+      {% for av in avaliacoes %}
+        <blockquote class="depoimento">
+          <span class="estrelas" aria-label="Nota {{ av.nota }} de 5">{% for i in range(av.nota) %}★{% endfor %}</span>
+          <p>“{{ av.comentario or "Sem comentário." }}”</p>
+          <footer>{{ av.cliente }} · {{ av.criado_em|data_br }}</footer>
+        </blockquote>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="vazio">Ainda não há avaliações para este artista.</p>
+  {% endif %}
+{% endblock %}

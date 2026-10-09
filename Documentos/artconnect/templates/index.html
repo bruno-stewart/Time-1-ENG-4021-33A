@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block titulo %}Encontre o artista ideal{% endblock %}
+
+{% block conteudo %}
+  <p class="eyebrow eyebrow--accent">Marketplace de artistas locais</p>
+  <h1 class="title">Encontre o artista<br>ideal para seu evento</h1>
+  <p class="lead">Compare músicos, DJs, mágicos e artistas visuais por estilo, preço e região, com avaliações de quem já contratou.</p>
+
+  <form class="search" action="{{ url_for('index') }}" method="get">
+    <label class="lbl" for="categoria" hidden>Categoria</label>
+    <select class="select" id="categoria" name="categoria" aria-label="Categoria">
+      <option value="">Todas as categorias</option>
+      {% for cat in categorias %}
+        <option value="{{ cat.id }}" {% if categoria_atual == cat.id|string %}selected{% endif %}>{{ cat.nome }}</option>
+      {% endfor %}
+    </select>
+    <input class="input" type="text" name="cidade" value="{{ cidade_atual }}" placeholder="Cidade (ex.: Rio de Janeiro)" aria-label="Cidade">
+    <button class="btn btn--accent" type="submit">Encontrar artistas</button>
+  </form>
+
+  <h2 class="section-title">Categorias</h2>
+  <div class="chips">
+    <a class="chip {% if categoria_atual == '' %}ativo{% endif %}" href="{{ url_for('index', cidade=cidade_atual) }}">Todas</a>
+    {% for cat in categorias %}
+      <a class="chip {% if categoria_atual == cat.id|string %}ativo{% endif %}" href="{{ url_for('index', categoria=cat.id, cidade=cidade_atual) }}">{{ cat.nome }}</a>
+    {% endfor %}
+  </div>
+
+  <h2 class="section-title">Talentos mais bem avaliados</h2>
+  {% if artistas %}
+    <div class="grid-artistas">
+      {% for artista in artistas %}
+        <a class="artista" href="{{ url_for('artista_detalhe', artista_id=artista.id) }}">
+          <span class="cat">{{ artista.categoria }}{% if artista.estilo %} · {{ artista.estilo }}{% endif %}</span>
+          <h3>{{ artista.nome_artistico }}</h3>
+          <span class="cidade">{{ artista.cidade }}</span>
+          <div class="rodape">
+            <span class="nota">
+              {% if artista.nota_media %}★ {{ artista.nota_media }} ({{ artista.total_avaliacoes }}){% else %}Novo{% endif %}
+            </span>
+            <span>a partir de <strong>{{ artista.preco_minimo|moeda }}</strong></span>
+          </div>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="vazio">Nenhum artista encontrado com esses filtros.</p>
+  {% endif %}
+
+  {% if depoimentos %}
+    <h2 class="section-title">Quem já contratou</h2>
+    <div class="depoimentos">
+      {% for dep in depoimentos %}
+        <blockquote class="depoimento">
+          <span class="estrelas" aria-label="Nota {{ dep.nota }} de 5">{% for i in range(dep.nota) %}★{% endfor %}</span>
+          <p>“{{ dep.comentario }}”</p>
+          <footer>{{ dep.cliente }} · {{ dep.nome_artistico }}</footer>
+        </blockquote>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endblock %}
