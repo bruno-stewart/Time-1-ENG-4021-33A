@@ -1,0 +1,24 @@
+# Configuração de publicação do ArtConnect no Render (render.com)
+# Cria o site e o banco PostgreSQL juntos.
+services:
+  - type: web
+    name: artconnect
+    runtime: python
+    plan: free
+    rootDir: Documentos/artconnect
+    buildCommand: pip install -r requirements.txt
+    startCommand: python iniciar_banco.py && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: artconnect-db
+          property: connectionString
+
+databases:
+  - name: artconnect-db
+    plan: free
+    databaseName: artconnect
