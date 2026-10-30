@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Perguntas frequentes | ART connect</title>
+<meta name="description" content="Tire suas dúvidas sobre contratar artistas, pagamento seguro, cancelamento e como funciona o ART connect.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  /* ============ Cores e tipografia: troque aqui para combinar com o resto do site ============ */
+  :root {
+    --ink: #241B3A;        /* roxo-noite: fundo do topo, textos fortes */
+    --ink-soft: #3A2E57;
+    --paper: #FBFAFD;      /* fundo da página */
+    --surface: #FFFFFF;
+    --line: #E3DEEE;
+    --muted: #5E5873;
+    --spot: #F2B33D;       /* dourado de "holofote": foco e destaques */
+    --spot-ink: #3A2600;
+    --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+    --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 1.0625rem;
+    line-height: 1.6;
+  }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--spot); outline-offset: 3px; }
+
+  .wrap { width: min(100% - 2.5rem, 62rem); margin-inline: auto; }
+
+  /* ============ Topo / hero ============ */
+  .hero { background: var(--ink); color: #fff; padding-bottom: 3.5rem; }
+  .nav { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.25rem; }
+  .logo { font-family: var(--display); font-weight: 800; font-size: 1.35rem; text-decoration: none; letter-spacing: -0.01em; }
+  .logo span { color: var(--spot); }
+  .nav-links { display: flex; gap: 1.5rem; font-weight: 500; }
+  .nav-links a { text-decoration: none; opacity: .85; }
+  .nav-links a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+
+  .hero-body { padding-top: 3rem; max-width: 40rem; }
+  .hero h1 {
+    font-family: var(--display);
+    font-weight: 800;
+    font-size: clamp(2.1rem, 6vw, 3.6rem);
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+    margin: 0 0 1rem;
+  }
+  .hero p { margin: 0 0 2rem; color: #D9D2EA; max-width: 34rem; }
+
+  .search { position: relative; }
+  .search label { display: block; font-weight: 600; margin-bottom: .5rem; }
+  .search input {
+    width: 100%;
+    font: inherit;
+    font-size: 1.1rem;
+    color: var(--ink);
+    background: #fff;
+    border: 3px solid transparent;
+    border-radius: 14px;
+    padding: 1rem 3rem 1rem 1.1rem;
+    box-shadow: 0 8px 0 rgba(0,0,0,.18);
+  }
+  .search input::placeholder { color: #8A839E; }
+  .search input:focus { outline: none; border-color: var(--spot); }
+  .search .clear {
+    position: absolute; right: .6rem; bottom: .55rem;
+    width: 2.4rem; height: 2.4rem;
+    border: 0; border-radius: 10px;
+    background: transparent; color: var(--muted);
+    font-size: 1.5rem; line-height: 1; cursor: pointer;
+  }
+  .search .clear[hidden] { display: none; }
+  .search .clear:hover { background: #F0ECF7; }
+
+  /* ============ Filtros por assunto ============ */
+  .filters-bar { background: var(--paper); border-bottom: 1px solid var(--line); position: sticky; top: 0; z-index: 5; }
+  .filters { display: flex; gap: .6rem; overflow-x: auto; padding-block: .9rem; scrollbar-width: thin; }
+  .chip {
+    flex: none;
+    font: inherit; font-weight: 600; font-size: .95rem;
+    color: var(--ink);
+    background: var(--surface);
+    border: 1.5px solid var(--line);
+    border-radius: 999px;
+    padding: .45rem 1rem;
+    cursor: pointer;
+  }
+  .chip:hover { border-color: var(--ink); }
+  .chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+
+  /* ============ Conteúdo ============ */
+  main { padding-block: 2rem 4rem; }
+  .status { color: var(--muted); font-size: .95rem; margin: 0 0 1.5rem; min-height: 1.5em; }
+
+  .group { margin-bottom: 2.75rem; }
+  .group h2 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 1.6rem;
+    letter-spacing: -0.01em;
+    margin: 0 0 .25rem;
+  }
+  .group .lead { margin: 0 0 1rem; color: var(--muted); }
+
+  .faq-item { border-bottom: 1px solid var(--line); }
+  .faq-item:first-of-type { border-top: 1px solid var(--line); }
+  .faq-item summary {
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem;
+    padding: 1.1rem .25rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq-item summary::-webkit-details-marker { display: none; }
+  .faq-item summary:hover { color: var(--ink-soft); }
+  .faq-item summary::after {
+    content: "";
+    flex: none;
+    width: 1.6rem; height: 1.6rem; margin-top: .1rem;
+    border-radius: 50%;
+    background:
+      linear-gradient(var(--ink), var(--ink)) center / 10px 2px no-repeat,
+      linear-gradient(var(--ink), var(--ink)) center / 2px 10px no-repeat,
+      var(--spot);
+    transition: transform .25s ease;
+  }
+  .faq-item[open] summary::after {
+    transform: rotate(135deg);
+  }
+  .answer { padding: 0 .25rem 1.4rem; max-width: 44rem; color: #3B3452; }
+  .answer p { margin: 0 0 .8rem; }
+  .answer ul, .answer ol { margin: 0 0 .8rem; padding-left: 1.3rem; }
+  .answer li { margin-bottom: .3rem; }
+  .answer a { font-weight: 600; text-underline-offset: 3px; }
+
+  table.rules { border-collapse: collapse; width: 100%; max-width: 30rem; margin: .4rem 0 .9rem; font-size: .98rem; }
+  table.rules th, table.rules td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid var(--line); }
+  table.rules th { font-weight: 600; background: #F3F0F9; }
+
+  .note {
+    background: #FFF6E0;
+    border-left: 4px solid var(--spot);
+    padding: .7rem 1rem;
+    border-radius: 0 8px 8px 0;
+    font-size: .98rem;
+  }
+
+  .empty { display: none; padding: 2rem; border: 1.5px dashed var(--line); border-radius: 14px; text-align: center; }
+  .empty.show { display: block; }
+  .empty p { margin: 0 0 1rem; }
+
+  /* ============ Fim da página: fala com a gente ============ */
+  .help { background: var(--ink); color: #fff; border-radius: 20px; padding: 2rem; display: grid; gap: 1.25rem; }
+  .help h2 { font-family: var(--display); font-size: 1.7rem; letter-spacing: -0.01em; margin: 0; }
+  .help p { margin: 0; color: #D9D2EA; }
+  .actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+  .btn {
+    display: inline-block;
+    font: inherit; font-weight: 600;
+    text-decoration: none;
+    padding: .8rem 1.3rem;
+    border-radius: 12px;
+    border: 2px solid var(--spot);
+  }
+  .btn.primary { background: var(--spot); color: var(--spot-ink); }
+  .btn.primary:hover { background: #FFC85C; }
+  .btn.ghost { color: #fff; }
+  .btn.ghost:hover { background: rgba(255,255,255,.1); }
+
+  footer { padding: 2rem 0 3rem; color: var(--muted); font-size: .92rem; border-top: 1px solid var(--line); }
+
+  /* ============ Telas maiores ============ */
+  @media (min-width: 52rem) {
+    .help { grid-template-columns: 1fr auto; align-items: center; padding: 2.25rem 2.5rem; }
+  }
+  @media (max-width: 36rem) {
+    .nav-links { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    .faq-item summary::after { transition: none; }
+  }
+</style>
+</head>
+
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <nav class="nav" aria-label="Principal">
+      <a class="logo" href="/">ART<span>connect</span></a>
+      <div class="nav-links">
+        <a href="/">Início</a>
+        <a href="/orcamento">Pedir orçamento</a>
+      </div>
+    </nav>
+
+    <div class="hero-body">
+      <h1>Dúvidas sobre contratar artistas?</h1>
+      <p>Aqui você encontra como funciona o pedido, o pagamento protegido, o cancelamento e o que fazer se algo não sair como combinado.</p>
+
+      <div class="search" role="search">
+        <label for="q">Busque por uma palavra</label>
+        <input id="q" type="search" placeholder="Ex.: cancelar, pagamento, reembolso" autocomplete="off">
+        <button class="clear" id="clear" type="button" aria-label="Limpar busca" hidden>&times;</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="filters-bar">
+  <div class="wrap">
+    <div class="filters" role="group" aria-label="Filtrar por assunto">
+      <button class="chip" type="button" data-filter="all" aria-pressed="true">Todas</button>
+      <button class="chip" type="button" data-filter="contratar" aria-pressed="false">Contratar</button>
+      <button class="chip" type="button" data-filter="pagamento" aria-pressed="false">Pagamento e segurança</button>
+      <button class="chip" type="button" data-filter="cancelamento" aria-pressed="false">Cancelamento</button>
+      <button class="chip" type="button" data-filter="evento" aria-pressed="false">Dia do evento</button>
+      <button class="chip" type="button" data-filter="artistas" aria-pressed="false">Sou artista</button>
+    </div>
+  </div>
+</div>
+
+<main class="wrap">
+  <p class="status" id="status" role="status" aria-live="polite"></p>
+
+  <!-- ===== Contratar ===== -->
+  <section class="group" data-cat="contratar" aria-labelledby="h-contratar">
+    <h2 id="h-contratar">Contratar um artista</h2>
+    <p class="lead">Do primeiro pedido até a confirmação.</p>
+
+    <details class="faq-item" id="como-funciona">
+      <summary>Como funciona a contratação?</summary>
+      <div class="answer">
+        <ol>
+          <li>Você escolhe a categoria e a cidade, ou vai direto em <a href="/orcamento">Pedir orçamento</a>.</li>
+          <li>Informa data, horário, local e número de convidados.</li>
+          <li>O artista analisa e responde com uma proposta.</li>
+          <li>Se você aceitar, paga pela plataforma e a data fica reservada para você.</li>
+          <li>No dia, o artista presta o serviço. O pagamento é liberado a ele depois do evento.</li>
+        </ol>
+      </div>
+    </details>
+
+    <details class="faq-item" id="tipos-de-artista">
+      <summary>Que tipos de artista posso contratar?</summary>
+      <div class="answer">
+        <p>Chefs e buffet, mágicos, DJs, cantores, e foto e vídeo. Cada pedido de orçamento é para um tipo de serviço, então se você precisa de mais de um (por exemplo, DJ e fotógrafo), faça um pedido para cada.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="preco">
+      <summary>Quanto custa? Pedir orçamento é pago?</summary>
+      <div class="answer">
+        <p>Pedir orçamento é grátis e não obriga você a contratar. Os preços nos perfis são uma referência: o valor final depende de data, duração, local e número de convidados, e aparece na proposta do artista antes de você pagar.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="resposta-artista">
+      <summary>Quanto tempo o artista leva para responder?</summary>
+      <!-- AJUSTE: prazo de resposta -->
+      <div class="answer">
+        <p>Em geral, até 24 horas. Se o artista não responder nesse prazo, o pedido pode expirar e você poderá escolher outro profissional.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="antecedencia">
+      <summary>Com quanto tempo de antecedência devo contratar?</summary>
+      <div class="answer">
+        <p>Quanto antes, mais opções de data e melhor o preço. Para casamentos e eventos grandes, o ideal é começar com 2 a 3 meses de antecedência. Eventos menores podem ser fechados em poucas semanas, dependendo da agenda do artista.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="remarcar">
+      <summary>Posso remarcar a data do evento?</summary>
+      <div class="answer">
+        <p>Depende da agenda do artista. Converse com ele pelo próprio pedido na plataforma: se ele estiver livre na nova data, a reserva é atualizada sem custo extra. Se não estiver, vale a política de cancelamento.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===== Pagamento ===== -->
+  <section class="group" data-cat="pagamento" aria-labelledby="h-pagamento">
+    <h2 id="h-pagamento">Pagamento e segurança</h2>
+    <p class="lead">Seu dinheiro fica protegido até o serviço acontecer.</p>
+
+    <details class="faq-item" id="como-pagar">
+      <summary>Como e onde eu pago?</summary>
+      <!-- AJUSTE: formas de pagamento aceitas pelo seu gateway -->
+      <div class="answer">
+        <p>O pagamento é feito dentro do ART connect, por Pix ou cartão de crédito. Nunca pague o artista direto: é o pagamento pela plataforma que garante a proteção descrita nesta página.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="pagamento-retido">
+      <summary>Por que o pagamento fica retido?</summary>
+      <div class="answer">
+        <p>Para proteger os dois lados. Quando você paga, o valor fica guardado com o ART connect e o artista só recebe depois que o evento acontece. Assim, se o artista não comparecer, você pode pedir reembolso. E o artista tem a segurança de que o valor já está reservado.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="quando-artista-recebe">
+      <summary>Quando o artista recebe?</summary>
+      <div class="answer">
+        <p>Depois de 48 horas do fim do evento, caso você não tenha aberto nenhum problema nesse período. Se houver uma disputa, o repasse fica pausado até a decisão.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="artistas-verificados">
+      <summary>Os artistas são verificados?</summary>
+      <!-- AJUSTE: descreva a verificação que você realmente implementou -->
+      <div class="answer">
+        <p>Sim. Antes de aparecer na busca, cada artista confirma a identidade e passa por revisão do portfólio. As avaliações dos perfis vêm só de clientes que contrataram e pagaram pela plataforma, então não há avaliação comprada ou de conhecidos.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="pagar-por-fora">
+      <summary>Posso combinar o pagamento direto com o artista?</summary>
+      <div class="answer">
+        <p>Não recomendamos. Fora da plataforma não há retenção do pagamento, nem reembolso garantido, nem como abrir disputa. O pagamento direto também vai contra os termos de uso e pode levar à suspensão da conta.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===== Cancelamento ===== -->
+  <section class="group" data-cat="cancelamento" aria-labelledby="h-cancelamento">
+    <h2 id="h-cancelamento">Cancelamento e reembolso</h2>
+    <p class="lead">As regras são as mesmas para todos e aparecem antes de você confirmar.</p>
+
+    <details class="faq-item" id="cancelar">
+      <summary>E se eu precisar cancelar?</summary>
+      <!-- AJUSTE: faixas de reembolso (devem ser iguais às dos Termos de Uso) -->
+      <div class="answer">
+        <p>O reembolso depende de quanto tempo falta para o evento:</p>
+        <table class="rules">
+          <thead><tr><th>Cancelamento feito</th><th>Você recebe de volta</th></tr></thead>
+          <tbody>
+            <tr><td>15 dias ou mais antes</td><td>100%</td></tr>
+            <tr><td>Entre 7 e 14 dias antes</td><td>50%</td></tr>
+            <tr><td>Menos de 7 dias antes</td><td>Sem reembolso</td></tr>
+          </tbody>
+        </table>
+        <p>A parte não reembolsada compensa o artista, que reservou a data e deixou de aceitar outros trabalhos. Antes de confirmar o cancelamento, a plataforma mostra exatamente quanto você vai receber.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="artista-cancela">
+      <summary>E se o artista cancelar?</summary>
+      <div class="answer">
+        <p>Você recebe 100% do valor de volta, qualquer que seja a data. Cancelamentos por parte do artista ficam registrados no perfil dele e podem levar à suspensão.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="prazo-reembolso">
+      <summary>Em quanto tempo o reembolso cai na minha conta?</summary>
+      <div class="answer">
+        <p>O ART connect solicita o reembolso na hora. O prazo para o valor aparecer depende da forma de pagamento: no Pix costuma ser rápido, e no cartão pode levar até duas faturas, conforme as regras do seu banco.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="nao-pagou">
+      <summary>Fiz o pedido, mas não paguei. O que acontece?</summary>
+      <!-- AJUSTE: tempo limite para pagar -->
+      <div class="answer">
+        <p>A reserva fica aguardando o pagamento por 30 minutos. Depois disso, ela expira e a data volta a ficar livre. Se o pagamento for confirmado depois do prazo, o valor é devolvido automaticamente.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===== Dia do evento ===== -->
+  <section class="group" data-cat="evento" aria-labelledby="h-evento">
+    <h2 id="h-evento">No dia do evento</h2>
+    <p class="lead">Se algo não saiu como combinado, você tem como resolver.</p>
+
+    <details class="faq-item" id="problema-no-evento">
+      <summary>O artista não apareceu ou o serviço foi diferente do combinado. O que faço?</summary>
+      <div class="answer">
+        <p>Abra uma disputa pela sua conta, em até 48 horas depois do fim do evento. Descreva o que aconteceu e anexe provas, como fotos, vídeos ou mensagens. Enquanto a disputa estiver aberta, o pagamento fica retido.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="como-funciona-disputa">
+      <summary>Como a disputa é resolvida?</summary>
+      <div class="answer">
+        <p>Nossa equipe analisa as provas dos dois lados e decide quanto do valor volta para você: pode ser o reembolso total, parcial ou nenhum. A decisão sempre vem com uma justificativa por escrito.</p>
+        <p class="note">Abrir a disputa dentro das 48 horas é importante: passado esse prazo, o pagamento é liberado ao artista automaticamente.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="avaliar">
+      <summary>Posso avaliar o artista?</summary>
+      <div class="answer">
+        <p>Sim. Depois do evento, você recebe um convite para avaliar. Só quem contratou e pagou pelo ART connect pode avaliar, para que as notas sejam confiáveis.</p>
+      </div>
+    </details>
+  </section>
+
+  <!-- ===== Artistas ===== -->
+  <section class="group" data-cat="artistas" aria-labelledby="h-artistas">
+    <h2 id="h-artistas">Sou artista</h2>
+    <p class="lead">Para chefs, músicos, DJs, mágicos, fotógrafos e videomakers.</p>
+
+    <details class="faq-item" id="cadastro-artista">
+      <summary>Como me cadastro como artista?</summary>
+      <div class="answer">
+        <p>Crie sua conta, preencha o perfil com fotos, vídeos e preços de referência, e envie seus documentos para confirmar a identidade. Depois da revisão, seu perfil entra na busca.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="comissao">
+      <summary>Quanto o ART connect cobra?</summary>
+      <!-- AJUSTE: comissão -->
+      <div class="answer">
+        <p>Cadastrar-se e receber pedidos é grátis. A plataforma cobra uma comissão de 15% sobre os serviços que você realmente recebe. Você vê o valor exato que vai receber antes de aceitar cada pedido.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="receber">
+      <summary>Quando e como eu recebo?</summary>
+      <div class="answer">
+        <p>O valor é transferido 48 horas depois do fim do evento, se não houver disputa aberta. Para receber, você precisa ter sua conta de recebimento verificada.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="recusar-pedido">
+      <summary>Posso recusar um pedido?</summary>
+      <div class="answer">
+        <p>Sim, sem nenhuma penalidade, desde que a recusa seja feita antes do aceite. Manter sua agenda atualizada evita receber pedidos para datas em que você não pode trabalhar.</p>
+      </div>
+    </details>
+
+    <details class="faq-item" id="artista-cancelar">
+      <summary>O que acontece se eu precisar cancelar depois de aceitar?</summary>
+      <div class="answer">
+        <p>O cliente recebe 100% de volta e o cancelamento fica registrado no seu perfil. Cancelamentos repetidos podem reduzir sua posição na busca ou levar à suspensão da conta. Se tiver uma emergência, avise o quanto antes para o cliente poder buscar outra opção.</p>
+      </div>
+    </details>
+  </section>
+
+  <div class="empty" id="empty">
+    <p><strong>Nenhuma pergunta encontrada para essa busca.</strong><br>Tente outra palavra ou peça ajuda diretamente.</p>
+    <a class="btn primary" href="mailto:contato@artconnect.com.br">Falar com a equipe</a>
+  </div>
+
+  <aside class="help" aria-labelledby="h-help">
+    <div>
+      <h2 id="h-help">Não achou sua resposta?</h2>
+      <p>Fale com a equipe ou peça um orçamento sem compromisso.</p>
+    </div>
+    <div class="actions">
+      <a class="btn primary" href="/orcamento">Pedir orçamento</a>
+      <!-- AJUSTE: troque pelo e-mail ou WhatsApp reais -->
+      <a class="btn ghost" href="mailto:contato@artconnect.com.br">Falar com a equipe</a>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  <div class="wrap">&copy; <span id="year"></span> ART connect. Conectando você aos melhores artistas para o seu evento.</div>
+</footer>
+
+<script>
+(function () {
+  var items   = Array.prototype.slice.call(document.querySelectorAll('.faq-item'));
+  var groups  = Array.prototype.slice.call(document.querySelectorAll('.group'));
+  var chips   = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var input   = document.getElementById('q');
+  var clearBt = document.getElementById('clear');
+  var status  = document.getElementById('status');
+  var empty   = document.getElementById('empty');
+  var filter  = 'all';
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Busca sem diferenciar acento ou maiúscula ("reembolso" acha "Reembolso")
+  function norm(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+  items.forEach(function (el) { el._text = norm(el.textContent); });
+
+  function apply() {
+    var terms = norm(input.value).split(/\s+/).filter(Boolean);
+    var shown = [];
+
+    items.forEach(function (el) {
+      var group   = el.closest('.group');
+      var okCat   = filter === 'all' || group.dataset.cat === filter;
+      var okText  = terms.every(function (t) { return el._text.indexOf(t) !== -1; });
+      var visible = okCat && okText;
+      el.hidden = !visible;
+      if (visible) shown.push(el);
+    });
+
+    groups.forEach(function (g) {
+      g.hidden = !g.querySelector('.faq-item:not([hidden])');
+    });
+
+    // Com poucos resultados de busca, já mostra as respostas abertas
+    if (terms.length) {
+      items.forEach(function (el) { if (el.hidden) return; el.open = shown.length <= 3; });
+    }
+
+    clearBt.hidden = !input.value;
+    empty.classList.toggle('show', shown.length === 0);
+    status.textContent = terms.length
+      ? (shown.length === 0 ? '' : shown.length + (shown.length === 1 ? ' pergunta encontrada' : ' perguntas encontradas'))
+      : '';
+  }
+
+  input.addEventListener('input', apply);
+  clearBt.addEventListener('click', function () { input.value = ''; apply(); input.focus(); });
+
+  chips.forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      filter = chip.dataset.filter;
+      chips.forEach(function (c) { c.setAttribute('aria-pressed', String(c === chip)); });
+      apply();
+    });
+  });
+
+  // Link direto: faq.html#cancelar abre a pergunta certa
+  function openFromHash() {
+    var id = decodeURIComponent(location.hash.slice(1));
+    var el = id && document.getElementById(id);
+    if (el && el.classList.contains('faq-item')) {
+      el.hidden = false;
+      el.closest('.group').hidden = false;
+      el.open = true;
+      el.scrollIntoView({ block: 'center' });
+    }
+  }
+  window.addEventListener('hashchange', openFromHash);
+  openFromHash();
+
+  // Dados estruturados (FAQPage) gerados a partir do próprio conteúdo: ajuda o Google a mostrar as respostas na busca
+  var ld = {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: items.map(function (el) {
+      return {
+        '@type': 'Question',
+        name: el.querySelector('summary').textContent.trim(),
+        acceptedAnswer: { '@type': 'Answer', text: el.querySelector('.answer').textContent.replace(/\s+/g, ' ').trim() }
+      };
+    })
+  };
+  var s = document.createElement('script');
+  s.type = 'application/ld+json';
+  s.textContent = JSON.stringify(ld);
+  document.head.appendChild(s);
+})();
+</script>
+</body>
+</html>
