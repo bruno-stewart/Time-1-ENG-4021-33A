@@ -16,6 +16,11 @@
       {{ ui.kpi("Volume contratado", totais.volume|moeda, totais.contratos ~ " contratos") }}
       {{ ui.kpi("Valor retido", totais.retido|moeda, "aguardando confirmação") }}
       {{ ui.kpi("Nota média", totais.nota_media or "—", totais.avaliacoes ~ " avaliações") }}
+      <a href="{{ url_for('admin_denuncias') }}" class="block rounded-2xl p-5 ring-1 ring-black/5 transition-colors {% if totais.denuncias_abertas %}bg-stage text-cream hover:bg-ink{% else %}border border-line bg-cream hover:bg-paper{% endif %}">
+        <p class="font-mono text-[11px] uppercase tracking-[0.15em] {% if totais.denuncias_abertas %}text-cream/80{% else %}text-ink-soft{% endif %}">Denúncias abertas</p>
+        <p class="mt-2 font-display text-3xl tracking-tight">{{ totais.denuncias_abertas }}</p>
+        <p class="mt-1 text-xs {% if totais.denuncias_abertas %}text-cream/80{% else %}text-ink-soft{% endif %}">abrir fila de moderação →</p>
+      </a>
     </div>
 
     <section class="mt-14">

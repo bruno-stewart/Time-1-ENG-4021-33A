@@ -21,15 +21,26 @@
     </div>
     <div class="flex flex-col items-end gap-2">
       <span class="font-display text-2xl tracking-tight">{{ c.valor_total|moeda }}</span>
-      {% if c.status == 'valor_retido' and c.ja_aconteceu %}
+      {% if c.status == 'aguardando_pagamento' and c.no_futuro %}
+        <a href="{{ url_for('pagar_contrato', contrato_id=c.id) }}" class="rounded-full bg-stage px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-ink">Pagar agora</a>
+      {% elif c.status == 'valor_retido' and c.ja_aconteceu %}
         <form action="{{ url_for('confirmar_evento', contrato_id=c.id) }}" method="post">
           <button type="submit" class="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-stage">Confirmar que o evento aconteceu</button>
         </form>
       {% elif c.status == 'concluido' and not c.avaliacao_id %}
         <a href="{{ url_for('avaliar_contrato', contrato_id=c.id) }}" class="rounded-full bg-stage px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-ink">Avaliar artista</a>
-      {% else %}
-        <a href="{{ url_for('artista_detalhe', artista_id=c.artista_id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Ver artista</a>
+      {% elif c.status == 'cancelado' and c.cancelado_por %}
+        <span class="text-right text-xs text-ink-soft">Cancelado pelo {{ c.cancelado_por }} · reembolso {{ c.valor_reembolso|moeda }}</span>
       {% endif %}
+      <div class="flex flex-wrap justify-end gap-2">
+        {% if c.artista_user_id or c.total_mensagens %}
+          <a href="{{ url_for('conversa', contrato_id=c.id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Conversar{% if c.mensagens_novas %}<span class="ml-1.5 rounded-full bg-stage px-1.5 py-0.5 text-[10px] text-cream">{{ c.mensagens_novas }}</span>{% endif %}</a>
+        {% endif %}
+        {% if c.status in ['aguardando_pagamento', 'valor_retido'] and c.no_futuro %}
+          <a href="{{ url_for('cancelar_contrato', contrato_id=c.id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold text-ink-soft transition-colors hover:bg-paper hover:text-stage">Cancelar</a>
+        {% endif %}
+        <a href="{{ url_for('artista_detalhe', artista_id=c.artista_id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Ver artista</a>
+      </div>
     </div>
   </li>
 {% endmacro %}
@@ -55,11 +66,12 @@
       {{ ui.aba("Pagamentos", url_for('painel', aba='pagamentos'), aba == 'pagamentos') }}
       {{ ui.aba("Pedidos de orçamento", url_for('painel', aba='pedidos'), aba == 'pedidos') }}
       {{ ui.aba("Mensagens", url_for('painel', aba='mensagens'), aba == 'mensagens', indicadores.mensagens_novas) }}
+      {{ ui.aba("Favoritos", url_for('painel', aba='favoritos'), aba == 'favoritos', favoritos|length) }}
     </nav>
 
     <div class="mt-8">
       {% if aba == 'visao' %}
-        {% set proximos = contratos|rejectattr('ja_aconteceu')|list %}
+        {% set proximos = contratos|rejectattr('ja_aconteceu')|rejectattr('status', 'equalto', 'cancelado')|list %}
         <section class="grid gap-8 md:grid-cols-12">
           <div class="md:col-span-8">
             <h2 class="font-display text-2xl uppercase tracking-tight">Próximos eventos</h2>
@@ -192,8 +204,29 @@
 
       {% elif aba == 'mensagens' %}
         <section>
-          <h2 class="font-display text-2xl uppercase tracking-tight">Conversas</h2>
+          <h2 class="font-display text-2xl uppercase tracking-tight">Conversas por contrato</h2>
+          {% set conversas = contratos|selectattr('total_mensagens')|list %}
+          {% if conversas %}
+            <ul class="mt-4 divide-y divide-line rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+              {% for c in conversas %}
+                <li>
+                  <a href="{{ url_for('conversa', contrato_id=c.id) }}" class="flex flex-wrap items-center gap-4 px-5 py-4 transition-colors hover:bg-paper">
+                    {{ ui.foto(c, "size-12 rounded-full") }}
+                    <div class="min-w-0 flex-1">
+                      <p class="font-semibold">{{ c.nome_artistico }}</p>
+                      <p class="text-xs text-ink-soft">{{ c.tipo|tipo_evento }} · {{ c.data_evento|data_br }} · {{ c.total_mensagens }} mensage{{ 'm' if c.total_mensagens == 1 else 'ns' }}</p>
+                    </div>
+                    {% if c.mensagens_novas %}{{ ui.selo(c.mensagens_novas ~ " nova" ~ ("s" if c.mensagens_novas > 1 else ""), "stage") }}{% endif %}
+                    <span class="text-sm font-semibold text-stage">Abrir →</span>
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="mt-4">{{ ui.vazio("Nenhuma conversa ainda. Depois de fechar um contrato, use o botão Conversar.") }}</div>
+          {% endif %}
           {% if mensagens %}
+            <h3 class="mt-10 font-display text-xl uppercase tracking-tight">Mensagens antigas</h3>
             <div class="mt-4 flex flex-col rounded-2xl border border-line bg-cream ring-1 ring-black/5">
               <div class="space-y-3 px-5 py-5">
                 {% for m in mensagens %}
@@ -206,8 +239,34 @@
                 {% endfor %}
               </div>
             </div>
+          {% endif %}
+        </section>
+
+      {% elif aba == 'favoritos' %}
+        <section>
+          <h2 class="font-display text-2xl uppercase tracking-tight">Artistas favoritos</h2>
+          {% if favoritos %}
+            <ul class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {% for a in favoritos %}
+                <li class="flex flex-col overflow-hidden rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+                  <a href="{{ url_for('artista_detalhe', artista_id=a.id) }}">{{ ui.foto(a, "aspect-[4/3] w-full") }}</a>
+                  <div class="flex flex-1 flex-col p-5">
+                    <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-stage">{{ a.categoria }}{% if a.estilo %} · {{ a.estilo }}{% endif %}</p>
+                    <a href="{{ url_for('artista_detalhe', artista_id=a.id) }}" class="mt-1 font-display text-2xl uppercase leading-none tracking-tight hover:text-stage">{{ a.nome_artistico }}</a>
+                    <p class="mt-2 text-sm text-ink-soft">{{ a.cidade }} · a partir de <b class="text-ink">{{ a.preco_minimo|moeda }}</b></p>
+                    <div class="mt-auto flex flex-wrap gap-2 pt-4">
+                      <a href="{{ url_for('orcamento', categoria=a.categoria_id) }}" class="rounded-full bg-stage px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-ink">Pedir orçamento</a>
+                      <form action="{{ url_for('alternar_favorito', artista_id=a.id) }}" method="post">
+                        <input type="hidden" name="voltar" value="{{ url_for('painel', aba='favoritos') }}">
+                        <button type="submit" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Remover</button>
+                      </form>
+                    </div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
           {% else %}
-            <div class="mt-4">{{ ui.vazio("Nenhuma mensagem ainda.") }}</div>
+            <div class="mt-4">{{ ui.vazio("Você ainda não salvou nenhum artista. Use o botão ♥ Salvar no perfil de quem você gostou.") }}</div>
           {% endif %}
         </section>
       {% endif %}

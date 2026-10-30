@@ -28,6 +28,41 @@
         <p class="mt-6 text-sm text-cream/60">
           Cachê a partir de <span class="font-semibold text-cream">{{ artista.preco_minimo|moeda }}</span>
         </p>
+        {% if not artista.ativo %}
+          <p class="mt-4 rounded-xl bg-stage/20 px-4 py-2 text-sm text-cream">Perfil suspenso pela moderação: só o administrador vê esta página.</p>
+        {% endif %}
+        <div class="mt-6 flex flex-wrap items-center gap-3">
+          {% if usuario_papel == 'cliente' %}
+            <form action="{{ url_for('alternar_favorito', artista_id=artista.id) }}" method="post">
+              <button type="submit" aria-pressed="{{ 'true' if favorito else 'false' }}"
+                      class="rounded-full px-5 py-2.5 text-sm font-semibold ring-1 transition-colors {% if favorito %}bg-stage text-cream ring-stage hover:bg-cream hover:text-ink{% else %}text-cream ring-cream/30 hover:bg-cream hover:text-ink{% endif %}">
+                {% if favorito %}♥ Salvo nos favoritos{% else %}♡ Salvar nos favoritos{% endif %}
+              </button>
+            </form>
+          {% elif not usuario_nome %}
+            <a href="{{ url_for('login', proximo=request.path) }}" class="rounded-full px-5 py-2.5 text-sm font-semibold text-cream ring-1 ring-cream/30 transition-colors hover:bg-cream hover:text-ink">♡ Entre para salvar</a>
+          {% endif %}
+          {% if usuario_nome and usuario_papel != 'admin' %}
+            <details class="group relative">
+              <summary class="cursor-pointer list-none rounded-full px-4 py-2.5 text-xs font-semibold text-cream/60 transition-colors hover:text-cream">Denunciar perfil</summary>
+              <form action="{{ url_for('denunciar') }}" method="post" class="absolute left-0 z-10 mt-2 w-80 space-y-3 rounded-2xl bg-cream p-5 text-ink shadow-xl ring-1 ring-black/10">
+                <input type="hidden" name="alvo" value="artista">
+                <input type="hidden" name="alvo_id" value="{{ artista.id }}">
+                <label class="block">
+                  <span class="{{ ui.rotulo }}">Motivo</span>
+                  <select name="motivo" required class="{{ ui.campo_claro }}">
+                    {% for codigo, nome in motivos %}<option value="{{ codigo }}">{{ nome }}</option>{% endfor %}
+                  </select>
+                </label>
+                <label class="block">
+                  <span class="{{ ui.rotulo }}">Detalhes (opcional)</span>
+                  <textarea name="detalhes" maxlength="500" rows="3" class="{{ ui.campo_claro }}"></textarea>
+                </label>
+                <button type="submit" class="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-stage">Enviar denúncia</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
       </div>
     </div>
   </section>
@@ -55,9 +90,37 @@
     </div>
   </section>
 
+  {# ---------- Portfólio ---------- #}
+  {% if portfolio %}
+    <section class="border-b border-line">
+      <div class="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
+        <p class="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">(b) Portfólio</p>
+        <h2 class="font-display text-4xl uppercase tracking-tight">Trabalhos de {{ artista.nome_artistico }}</h2>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {% for item in portfolio %}
+            <figure class="overflow-hidden rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+              {% set embed = item.url|embed_video if item.tipo == 'video' else '' %}
+              {% if embed %}
+                <iframe src="{{ embed }}" title="{{ item.titulo }}" loading="lazy" class="aspect-video w-full" allow="encrypted-media; picture-in-picture" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe>
+              {% elif item.tipo == 'foto' %}
+                <img src="{{ item.url }}" alt="{{ item.titulo }}" loading="lazy" class="aspect-[4/3] w-full object-cover">
+              {% else %}
+                <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="flex aspect-[4/3] w-full items-center justify-center bg-ink font-display text-2xl uppercase text-cream transition-colors hover:bg-stage">▶ Ouvir</a>
+              {% endif %}
+              <figcaption class="flex items-center justify-between gap-3 px-4 py-3">
+                <span class="truncate text-sm font-semibold">{{ item.titulo }}</span>
+                {{ ui.selo(item.tipo) }}
+              </figcaption>
+            </figure>
+          {% endfor %}
+        </div>
+      </div>
+    </section>
+  {% endif %}
+
   {# ---------- Avaliações ---------- #}
   <section class="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
-    <p class="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">(b) Avaliações</p>
+    <p class="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">({{ 'c' if portfolio else 'b' }}) Avaliações</p>
     <h2 class="font-display text-4xl uppercase tracking-tight">O que dizem os clientes</h2>
     {% if avaliacoes %}
       <div class="mt-8 grid gap-4 md:grid-cols-3">
@@ -68,6 +131,19 @@
             <figcaption class="mt-4 border-t border-line pt-3">
               <p class="text-sm font-semibold">{{ av.cliente }}</p>
               <p class="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">{{ av.criado_em|data_br }}</p>
+              {% if usuario_nome and usuario_papel != 'admin' %}
+                <details class="mt-2">
+                  <summary class="cursor-pointer list-none text-[11px] text-ink-soft hover:text-stage">Denunciar avaliação</summary>
+                  <form action="{{ url_for('denunciar') }}" method="post" class="mt-2 space-y-2">
+                    <input type="hidden" name="alvo" value="avaliacao">
+                    <input type="hidden" name="alvo_id" value="{{ av.id }}">
+                    <select name="motivo" required aria-label="Motivo" class="w-full rounded-lg border border-line bg-paper px-3 py-2 text-xs">
+                      {% for codigo, nome in motivos %}<option value="{{ codigo }}">{{ nome }}</option>{% endfor %}
+                    </select>
+                    <button type="submit" class="rounded-full bg-ink px-3 py-1.5 text-[11px] font-semibold text-cream hover:bg-stage">Enviar</button>
+                  </form>
+                </details>
+              {% endif %}
             </figcaption>
           </figure>
         {% endfor %}

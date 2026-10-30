@@ -1,0 +1,27 @@
+sequenceDiagram
+    autonumber
+    actor C as Cliente
+    participant S as ArtConnect (Flask)
+    participant B as Banco (PostgreSQL)
+    actor A as Artista
+
+    C->>S: POST /orcamento (data, local, convidados)
+    S->>B: INSERT eventos, pedidos_orcamento (aberto)
+    A->>S: GET /artista/painel (pedidos da categoria)
+    S->>B: SELECT pedidos abertos + conflito de agenda
+    A->>S: POST /artista/pedidos/{id}/responder (valor)
+    S->>B: INSERT propostas (enviada) · pedido = com_propostas
+    S->>B: INSERT notificacoes (cliente: proposta)
+    C->>S: POST /propostas/{id}/aceitar
+    S->>B: propostas = aceita · pedido = fechado
+    S->>B: INSERT contratos (aguardando_pagamento) + pagamentos (pendente)
+    S->>B: INSERT disponibilidade (ocupado) · notificacoes (artista: contrato)
+    C->>S: POST /contratos/{id}/pagar (pix ou boleto)
+    S->>B: pagamentos = retido · contratos = valor_retido
+    S->>B: INSERT notificacoes (artista: pagamento)
+    C-->>A: Conversa no contrato (mensagens + notificacoes)
+    Note over C,A: Dia do evento
+    C->>S: POST /contratos/{id}/confirmar
+    S->>B: contratos = concluido · pagamentos = liberado
+    C->>S: POST /contratos/{id}/avaliar (nota 1 a 5)
+    S->>B: INSERT avaliacoes · notificacoes (artista: avaliação)

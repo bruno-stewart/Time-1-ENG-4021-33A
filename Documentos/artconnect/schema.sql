@@ -6,7 +6,8 @@
 
 DROP VIEW  IF EXISTS vw_painel_cliente;
 DROP VIEW  IF EXISTS vw_artistas;
-DROP TABLE IF EXISTS tokens_senha, disponibilidade, chamados_suporte,
+DROP TABLE IF EXISTS portfolio, denuncias, cancelamentos, notificacoes, favoritos,
+                     tokens_senha, disponibilidade, chamados_suporte,
                      mensagens, avaliacoes, pagamentos, contratos, propostas,
                      pedidos_orcamento, eventos, artistas, categorias,
                      profiles CASCADE;

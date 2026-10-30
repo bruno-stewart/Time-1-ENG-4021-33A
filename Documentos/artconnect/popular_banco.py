@@ -50,9 +50,10 @@ def popular():
     cursor = conexao.cursor()
 
     print("Criando tabelas...")
-    arquivo = open("schema.sql", encoding="utf-8")
-    cursor.execute(arquivo.read())
-    arquivo.close()
+    for nome_arquivo in ["schema.sql", "schema_sprint7.sql"]:
+        arquivo = open(nome_arquivo, encoding="utf-8")
+        cursor.execute(arquivo.read())
+        arquivo.close()
 
     print("Inserindo categorias...")
     for categoria in CATEGORIAS:
@@ -120,18 +121,24 @@ def popular():
                 (contrato["id"], contrato["artista_id"], contrato["cliente_id"], item[9], item[10]),
             )
 
-    # Mensagens do artista Selva Ritmo para o cliente luiz
+    # Mensagens do artista Selva Ritmo para o cliente luiz, dentro do contrato de 03/10
     mensagens = [
         "Oi! Confirmo a data de 3 de outubro. Consigo chegar às 18h.",
         "Vocês têm som no local ou levo minha estrutura?",
         "Mando o roteiro das músicas até amanhã.",
     ]
-    for texto in mensagens:
+    for posicao in range(len(mensagens)):
+        texto = mensagens[posicao]
+        # horários diferentes para a conversa aparecer na ordem certa
+        horas_atras = len(mensagens) - posicao
         cursor.execute(
-            "INSERT INTO mensagens (remetente_id, destinatario_id, conteudo) VALUES "
-            "((SELECT id FROM profiles WHERE username = 'selvaritmo'), "
-            "(SELECT id FROM profiles WHERE username = 'luiz'), %s)",
-            (texto,),
+            "INSERT INTO mensagens (contrato_id, remetente_id, destinatario_id, conteudo, enviada_em) VALUES "
+            "((SELECT c.id FROM contratos c JOIN artistas a ON a.id = c.artista_id "
+            "  JOIN profiles p ON p.id = c.cliente_id "
+            "  WHERE a.nome_artistico = 'Selva Ritmo' AND p.username = 'luiz'), "
+            "(SELECT id FROM profiles WHERE username = 'selvaritmo'), "
+            "(SELECT id FROM profiles WHERE username = 'luiz'), %s, now() - %s * INTERVAL '1 hour')",
+            (texto, horas_atras),
         )
 
     print("Inserindo pedidos de orçamento, propostas e agenda dos artistas...")
@@ -188,6 +195,42 @@ def popular():
     for item in agenda:
         cursor.execute(
             "INSERT INTO disponibilidade (artista_id, data, status, observacao) VALUES "
+            "((SELECT id FROM artistas WHERE nome_artistico = %s), %s, %s, %s)",
+            item,
+        )
+
+    print("Inserindo favoritos, notificações e portfólio (Sprint 7)...")
+    for artista in ["Clara Veloso", "Chef Raiz"]:
+        cursor.execute(
+            "INSERT INTO favoritos (cliente_id, artista_id) VALUES "
+            "((SELECT id FROM profiles WHERE username = 'luiz'), "
+            "(SELECT id FROM artistas WHERE nome_artistico = %s))",
+            (artista,),
+        )
+
+    # (username, tipo, texto, link)
+    notificacoes = [
+        ("luiz", "proposta", "Selva Ritmo enviou uma proposta de R$ 2.800 para o seu pedido de DJs.", "/painel?aba=pedidos"),
+        ("luiz", "proposta", "Neon Sombra enviou uma contraproposta para 13/12/2026.", "/painel?aba=pedidos"),
+        ("luiz", "pagamento", "O pagamento do contrato com Coletivo Maré está pendente.", "/painel?aba=historico"),
+        ("selvaritmo", "mensagem", "Você tem uma conversa ativa com Luiz Gullo.", "/artista/painel?aba=propostas"),
+    ]
+    for item in notificacoes:
+        cursor.execute(
+            "INSERT INTO notificacoes (user_id, tipo, texto, link) VALUES "
+            "((SELECT id FROM profiles WHERE username = %s), %s, %s, %s)",
+            item,
+        )
+
+    # (artista, tipo, titulo, url)
+    portfolio = [
+        ("Selva Ritmo", "foto", "Set no casamento do Jardim Ipê", "/static/img/dj.jpg"),
+        ("Coletivo Maré", "foto", "Quinteto no Hotel Vila Nova", "/static/img/jazz.jpg"),
+        ("Neon Sombra", "foto", "Techno na Casa Amarela", "/static/img/eletronico.jpg"),
+    ]
+    for item in portfolio:
+        cursor.execute(
+            "INSERT INTO portfolio (artista_id, tipo, titulo, url) VALUES "
             "((SELECT id FROM artistas WHERE nome_artistico = %s), %s, %s, %s)",
             item,
         )
