@@ -1,0 +1,25 @@
+Contexto: o ArtConnect é um marketplace que conecta clientes a artistas locais (Chefs & Buffet, Mágicos, DJs, Cantores, Foto & Vídeo). Mantenha o design atual (cores, tipografia e componentes). Todo o texto deve estar em português do Brasil. Use o Supabase já conectado.
+
+Objetivo: atrair artistas e dar mais confiança aos clientes. Implemente:
+
+1) Nova página "/seja-um-artista" e o link "Sou artista" no menu superior
+- Hero com título "Receba pedidos de eventos e tenha pagamento garantido", subtítulo curto e botão "Cadastrar meu perfil".
+- Seção "Por que entrar" com 3 cards: "Cadastro gratuito", "Pagamento retido até o dia do evento" e "Clientes qualificados por categoria e cidade".
+- Seção "Como funciona" em 3 passos: criar perfil, receber pedidos de orçamento, ser pago após o evento.
+- Formulário de cadastro com: nome artístico, categoria (select com as 5 categorias), estilo (ex.: Eletrônico, Jazz & MPB), cidade, preço mínimo "a partir de" (R$), link do Instagram ou portfólio, WhatsApp, e-mail e uma breve descrição (máx. 400 caracteres, com contador).
+- Validação de todos os campos, exceto a descrição, que é opcional. Mostre mensagem de sucesso: "Recebemos seu cadastro! Vamos analisar o perfil e entrar em contato."
+- Salve os envios na tabela "leads_artistas" do Supabase (id uuid, nome_artistico, categoria, estilo, cidade, preco_minimo numeric, link_portfolio, whatsapp, email, descricao, indicado_por text opcional, status default 'novo', criado_em default now()). Ative RLS: qualquer pessoa pode inserir, mas só admins podem ler.
+
+2) Página inicial: números reais
+- Troque "1.240+ profissionais" e "38 cidades" por contagens reais vindas do banco: total de artistas ativos e total de cidades distintas dos artistas.
+- Se o total de artistas for menor que 10, mostre apenas a frase "Novos talentos entrando toda semana" no lugar dos números.
+
+3) Página inicial: seção de confiança "Como o pagamento funciona"
+- Abaixo dos talentos em destaque, uma seção com 3 passos: "Você contrata", "O valor fica retido com segurança" e "O artista recebe após o evento". Termine com o botão "Pedir orçamento".
+
+4) Faixa de chamada para artistas
+- Antes do rodapé, uma faixa escura com o texto "É artista? Receba pedidos de eventos na sua cidade" e o botão "Cadastre-se grátis", que leva para /seja-um-artista.
+
+5) Rodapé
+- Adicione links para "Seja um artista", "Pedir orçamento" e "Suporte".
+

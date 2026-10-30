@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<title>ArtConnect – Formulários com validação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<!--
+  AUDITORIA – CORREÇÕES APLICADAS NESTE ARQUIVO
+  Acessibilidade: link "pular para o conteúdo"; <label> ligado a cada campo (for/id);
+  foco visível; erros por texto + ícone (não só cor) lidos por leitor de tela (aria-live,
+  aria-invalid, aria-describedby); campo Data com seletor nativo; contraste mínimo 4,5:1
+  (laranja de texto escurecido e placeholders mais fortes); alvos de toque >= 48px;
+  respeita "reduzir movimento".
+  Segurança: lista de valores permitidos (allowlist) nos selects; remoção de caracteres de
+  controle e < > nos textos; nada é inserido com innerHTML (só textContent); limites de
+  tamanho; honeypot anti-bot; bloqueio de envio duplo; sem dados pessoais no console.
+  IMPORTANTE: validação no navegador NÃO substitui a do servidor. Revalide tudo na API.
+-->
+
+<style>
+  :root{
+    --bege:#EFE6D2; --card:#F7F1EA; --tinta:#151010;
+    --acento:#C43D22;          /* botões (texto branco = 5,2:1) */
+    --acento-texto:#B8361C;    /* texto laranja sobre bege (4,7:1) */
+    --muted:#5E5349; --borda:#8A7D6E;
+    --erro-claro:#A52A12; --erro-escuro:#FFA08C; --foco-escuro:#FFC145;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bege);color:var(--tinta);font-family:Inter,system-ui,sans-serif;font-size:17px;line-height:1.5}
+  h1,h2{font-family:Anton,Impact,sans-serif;font-weight:400;text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin:0}
+  a{color:inherit}
+  .pular{position:absolute;left:12px;top:-100px;background:var(--tinta);color:#fff;padding:12px 18px;border-radius:999px;z-index:10}
+  .pular:focus{top:12px}
+  :focus-visible{outline:3px solid var(--tinta);outline-offset:3px}
+  .escuro :focus-visible{outline-color:var(--foco-escuro)}
+  [id]{scroll-margin-top:24px}
+
+  /* topo */
+  .topo{padding:20px 24px 14px;border-bottom:1px solid var(--borda)}
+  .topo-linha{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .logo{display:flex;align-items:center;gap:10px;font-family:Anton,sans-serif;font-size:34px;text-decoration:none;text-transform:uppercase;letter-spacing:-.01em}
+  .ponto{width:14px;height:14px;border-radius:50%;background:var(--acento)}
+  .botao-escuro{background:var(--tinta);color:#fff;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:999px;min-height:48px;display:inline-flex;align-items:center}
+  nav ul{display:flex;flex-wrap:wrap;gap:8px 28px;list-style:none;padding:0;margin:14px 0 0;justify-content:center}
+  nav a{color:var(--muted);text-decoration:none;font-weight:500;padding:10px 0;display:inline-block;min-height:44px}
+  nav a:hover{text-decoration:underline}
+  nav a[aria-current="page"]{color:var(--acento-texto);font-weight:700}
+
+  /* seções */
+  section{padding:56px 24px}
+  .conteudo{max-width:640px;margin:0 auto}
+  .rotulo{font-family:"JetBrains Mono",monospace;font-size:14px;letter-spacing:.2em;text-transform:uppercase;margin:0 0 14px}
+  .escuro{background:var(--tinta);color:#F7F1EA}
+  .escuro .rotulo{color:var(--erro-escuro)}
+  .claro .rotulo{color:var(--acento-texto)}
+  h2{font-size:clamp(40px,9vw,64px);margin-bottom:18px}
+  .intro{color:var(--muted);margin:0 0 32px;font-size:18px}
+  .escuro .intro{color:#CFC4B3}
+
+  /* campos */
+  form{display:grid;gap:26px}
+  .campo{display:grid;gap:8px}
+  label{font-family:"JetBrains Mono",monospace;font-size:14px;letter-spacing:.14em;text-transform:uppercase}
+  .claro label{font-family:Inter,sans-serif;font-size:17px;letter-spacing:0;text-transform:none;font-weight:500}
+  .obrig{color:var(--acento-texto);margin-left:4px}
+  .escuro .obrig{color:var(--erro-escuro)}
+  input,select,textarea{
+    width:100%;min-height:52px;padding:14px 18px;border-radius:18px;border:1.5px solid var(--borda);
+    font:inherit;font-size:17px;color:inherit;background:var(--card);
+  }
+  .escuro input,.escuro select,.escuro textarea{background:#1E1716;border-color:#8C7F73;color:#F7F1EA;color-scheme:dark}
+  textarea{min-height:130px;resize:vertical}
+  ::placeholder{color:#6F6358;opacity:1}
+  .escuro ::placeholder{color:#A89C8E;opacity:1}
+  .dica{margin:0;font-size:15px;color:var(--muted)}
+  .escuro .dica{color:#CFC4B3}
+  .erro{margin:0;font-size:15px;font-weight:500;color:var(--erro-claro)}
+  .escuro .erro{color:var(--erro-escuro)}
+  .erro:not(:empty)::before{content:"⚠ "}
+  .erro:empty{display:none}
+  [aria-invalid="true"]{border-width:2.5px;border-color:var(--erro-claro)}
+  .escuro [aria-invalid="true"]{border-color:var(--erro-escuro)}
+
+  button{font:inherit;font-weight:700;font-size:18px;min-height:56px;padding:0 32px;border:0;border-radius:999px;background:var(--acento);color:#fff;cursor:pointer;justify-self:start}
+  button:hover{background:#A9341C}
+  button[aria-disabled="true"]{opacity:.6;cursor:not-allowed}
+  .aviso{margin:0;font-weight:700;color:var(--erro-claro)}
+  .escuro .aviso{color:var(--erro-escuro)}
+  .aviso:empty,.ok:empty{display:none}
+  .aviso:not(:empty)::before{content:"⚠ "}
+  .ok{margin:0;padding:16px 18px;border-radius:18px;border:1.5px solid currentColor;font-weight:500}
+  .ok::before{content:"✓ ";font-weight:700}
+  .nota{font-size:15px;margin:0 0 -8px;color:var(--muted)}
+  .escuro .nota{color:#CFC4B3}
+
+  /* armadilha para robôs: fora da tela, ignorada por pessoas */
+  .hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+</style>
+</head>
+
+<body>
+<a class="pular" href="#orcamento">Pular para o conteúdo</a>
+
+<header class="topo">
+  <div class="topo-linha">
+    <a class="logo" href="/"><span class="ponto" aria-hidden="true"></span>ArtConnect</a>
+    <a class="botao-escuro" href="#orcamento">Pedir orçamento</a>
+  </div>
+  <nav aria-label="Principal">
+    <ul>
+      <li><a href="/">Início</a></li>
+      <li><a href="#orcamento">Orçamento</a></li>
+      <li><a href="/artistas">Artistas</a></li>
+      <li><a href="/painel">Meu painel</a></li>
+      <li><a href="#cadastro">Sou artista</a></li>
+    </ul>
+  </nav>
+</header>
+
+<main>
+
+  <!-- ===== PEDIDO DE ORÇAMENTO ===== -->
+  <section id="orcamento" class="escuro" aria-labelledby="t-orc">
+    <div class="conteudo">
+      <p class="rotulo">Pedido de orçamento</p>
+      <h2 id="t-orc">Conte sobre o seu evento</h2>
+      <p class="intro">Quanto mais preciso o pedido, melhores as propostas.</p>
+
+      <form id="form-orcamento" data-validar novalidate autocomplete="on">
+        <p class="nota">Campos com <span aria-hidden="true">*</span><span class="sr-only" style="position:absolute;left:-9999px">asterisco</span> são obrigatórios.</p>
+
+        <div class="campo">
+          <label for="o-tipo">Tipo de evento<span class="obrig" aria-hidden="true">*</span></label>
+          <select id="o-tipo" name="tipoEvento" data-campo="tipoEvento" required aria-required="true" aria-describedby="o-tipo-erro">
+            <option value="">Selecione…</option>
+            <option>Casamento</option><option>Aniversário</option><option>Corporativo</option><option>Formatura</option><option>Outro</option>
+          </select>
+          <p class="erro" id="o-tipo-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="o-categoria">Categoria artística<span class="obrig" aria-hidden="true">*</span></label>
+          <select id="o-categoria" name="categoria" data-campo="categoria" required aria-required="true" aria-describedby="o-categoria-erro">
+            <option value="">Selecione…</option>
+            <option>Chefs &amp; Buffet</option><option>Mágicos</option><option>DJs</option><option>Cantores</option><option>Foto &amp; Vídeo</option>
+          </select>
+          <p class="erro" id="o-categoria-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="o-data">Data do evento<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="o-data" name="data" type="date" data-campo="data" required aria-required="true" aria-describedby="o-data-dica o-data-erro">
+          <p class="dica" id="o-data-dica">Escolha uma data a partir de hoje.</p>
+          <p class="erro" id="o-data-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="o-orcamento">Orçamento (R$)<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="o-orcamento" name="orcamento" type="number" inputmode="decimal" min="100" max="1000000" step="1" placeholder="Ex.: 2500" data-campo="orcamento" required aria-required="true" aria-describedby="o-orcamento-dica o-orcamento-erro">
+          <p class="dica" id="o-orcamento-dica">Mínimo de R$ 100.</p>
+          <p class="erro" id="o-orcamento-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="o-local">Localização<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="o-local" name="local" type="text" maxlength="80" autocomplete="address-level2" placeholder="Cidade ou região" data-campo="local" required aria-required="true" aria-describedby="o-local-erro">
+          <p class="erro" id="o-local-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="hp" aria-hidden="true"><label>Não preencha<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+        <p class="aviso" role="alert"></p>
+        <button type="submit">Encontrar artistas</button>
+        <p class="ok" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+  <!-- ===== CADASTRO DE ARTISTA ===== -->
+  <section id="cadastro" class="claro" aria-labelledby="t-cad">
+    <div class="conteudo">
+      <p class="rotulo">Seu perfil</p>
+      <h2 id="t-cad">Faça parte do ArtConnect</h2>
+      <p class="intro">Música, gastronomia, mágica, foto e vídeo. Seu próximo evento começa aqui.</p>
+
+      <form id="form-cadastro" data-validar novalidate autocomplete="on">
+        <p class="nota">Campos com <span aria-hidden="true">*</span> são obrigatórios.</p>
+
+        <div class="campo">
+          <label for="c-nome">Nome artístico<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-nome" name="nomeArtistico" type="text" maxlength="60" autocomplete="nickname" placeholder="Como você se apresenta" data-campo="nomeArtistico" required aria-required="true" aria-describedby="c-nome-erro">
+          <p class="erro" id="c-nome-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-estilo">Estilo<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-estilo" name="estilo" type="text" maxlength="60" placeholder="Ex.: Eletrônico, Jazz &amp; MPB" data-campo="estilo" required aria-required="true" aria-describedby="c-estilo-erro">
+          <p class="erro" id="c-estilo-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-cidade">Cidade<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-cidade" name="cidade" type="text" maxlength="80" autocomplete="address-level2" placeholder="Ex.: São Paulo" data-campo="cidade" required aria-required="true" aria-describedby="c-cidade-erro">
+          <p class="erro" id="c-cidade-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-preco">Preço mínimo – a partir de (R$)<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-preco" name="precoMinimo" type="number" inputmode="decimal" min="50" max="1000000" step="1" placeholder="Ex.: 1500" data-campo="precoMinimo" required aria-required="true" aria-describedby="c-preco-erro">
+          <p class="erro" id="c-preco-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-tel">Telefone / WhatsApp<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-tel" name="telefone" type="tel" inputmode="numeric" maxlength="15" autocomplete="tel-national" placeholder="(11) 99999-9999" data-campo="telefone" required aria-required="true" aria-describedby="c-tel-erro">
+          <p class="erro" id="c-tel-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-email">E-mail<span class="obrig" aria-hidden="true">*</span></label>
+          <input id="c-email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="voce@exemplo.com.br" data-campo="email" required aria-required="true" aria-describedby="c-email-erro">
+          <p class="erro" id="c-email-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-categoria">Categoria<span class="obrig" aria-hidden="true">*</span></label>
+          <select id="c-categoria" name="categoria" data-campo="categoria" required aria-required="true" aria-describedby="c-categoria-erro">
+            <option value="">Selecione sua categoria</option>
+            <option>Chefs &amp; Buffet</option><option>Mágicos</option><option>DJs</option><option>Cantores</option><option>Foto &amp; Vídeo</option>
+          </select>
+          <p class="erro" id="c-categoria-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="campo">
+          <label for="c-desc">Breve descrição (opcional)</label>
+          <textarea id="c-desc" name="descricao" maxlength="400" placeholder="Conte um pouco sobre seu trabalho e o que torna seus eventos especiais." data-campo="descricao" aria-describedby="c-desc-dica c-desc-erro"></textarea>
+          <p class="dica" id="c-desc-dica"><span id="c-desc-cont">0</span>/400 caracteres</p>
+          <p class="erro" id="c-desc-erro" aria-live="polite"></p>
+        </div>
+
+        <div class="hp" aria-hidden="true"><label>Não preencha<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+
+        <p class="aviso" role="alert"></p>
+        <button type="submit">Cadastrar meu perfil</button>
+        <p class="ok" role="status"></p>
+      </form>
+    </div>
+  </section>
+
+</main>
+
+<script>
+(() => {
+  'use strict';
+
+  /* ---------- utilitários ---------- */
+  const pad = n => String(n).padStart(2, '0');
+  const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const hoje = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d; };
+  const digitos = v => v.replace(/\D/g, '');
+  // remove caracteres de controle e < > (defesa extra contra injeção de HTML/script)
+  const limpar = v => String(v).replace(/[\u0000-\u001F\u007F<>]/g, '').replace(/\s+/g, ' ').trim();
+
+  /* ---------- listas permitidas (allowlist) ---------- */
+  const TIPOS = ['Casamento', 'Aniversário', 'Corporativo', 'Formatura', 'Outro'];
+  const CATEGORIAS = ['Chefs & Buffet', 'Mágicos', 'DJs', 'Cantores', 'Foto & Vídeo'];
+  const NOME_RE = /^[\p{L}\p{M}0-9 &.'\-]+$/u;
+  const LOCAL_RE = /^[\p{L}\p{M}0-9 .,'\-\/]+$/u;
+
+  /* ---------- regras: devolvem '' (ok) ou a mensagem de erro ---------- */
+  const texto = (vazio, min, max, re, formato) => v => {
+    v = limpar(v);
+    if (!v) return vazio;
+    if (v.length < min) return `Digite pelo menos ${min} caracteres.`;
+    if (v.length > max) return `Use no máximo ${max} caracteres.`;
+    if (!re.test(v)) return formato;
+    return '';
+  };
+  const dinheiro = (vazio, min, max) => v => {
+    if (v === '') return vazio;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 'Digite apenas números.';
+    if (n < min) return `O valor mínimo é R$ ${min}.`;
+    if (n > max) return 'O valor informado é alto demais. Confira os números.';
+    return '';
+  };
+
+  const regras = {
+    tipoEvento: v => TIPOS.includes(v) ? '' : 'Selecione o tipo de evento.',
+    categoria: v => CATEGORIAS.includes(v) ? '' : 'Selecione uma categoria.',
+    data: v => {
+      if (!v) return 'Informe a data do evento.';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(v)) return 'Data inválida. Use o formato dia/mês/ano.';
+      const d = new Date(v + 'T00:00:00');
+      if (Number.isNaN(d.getTime())) return 'Data inválida.';
+      const limite = hoje(); limite.setFullYear(limite.getFullYear() + 2);
+      if (d < hoje()) return 'A data não pode ser no passado.';
+      if (d > limite) return 'Escolha uma data dentro dos próximos 2 anos.';
+      return '';
+    },
+    orcamento: dinheiro('Informe o seu orçamento.', 100, 1000000),
+    local: texto('Informe a cidade ou região.', 2, 80, LOCAL_RE, 'Use apenas letras, números e pontuação simples.'),
+    nomeArtistico: texto('Informe seu nome artístico.', 2, 60, NOME_RE, 'Use apenas letras, números, espaços e & . \' -'),
+    estilo: texto('Informe seu estilo.', 2, 60, NOME_RE, 'Use apenas letras, números, espaços e & . \' -'),
+    cidade: texto('Informe sua cidade.', 2, 80, LOCAL_RE, 'Use apenas letras, números e pontuação simples.'),
+    precoMinimo: dinheiro('Informe seu preço mínimo.', 50, 1000000),
+    telefone: v => {
+      const d = digitos(v);
+      if (!d) return 'Informe seu telefone.';
+      if (d.length < 10 || d.length > 11) return 'Digite o DDD e o número. Ex.: (11) 99999-9999.';
+      if (!/^[1-9][1-9]/.test(d)) return 'DDD inválido.';
+      if (d.length === 11 && d[2] !== '9') return 'Celulares começam com 9 depois do DDD.';
+      return '';
+    },
+    email: v => {
+      v = v.trim();
+      if (!v) return 'Informe seu e-mail.';
+      if (v.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'E-mail inválido. Ex.: voce@exemplo.com.br';
+      return '';
+    },
+    descricao: v => limpar(v).length > 400 ? 'A descrição pode ter no máximo 400 caracteres.' : ''
+  };
+
+  /* ---------- mostrar / limpar erro (sempre com textContent, nunca innerHTML) ---------- */
+  const marcar = (campo, msg) => {
+    campo.setAttribute('aria-invalid', msg ? 'true' : 'false');
+    document.getElementById(campo.id + '-erro').textContent = msg;
+  };
+  const validar = campo => {
+    const msg = regras[campo.dataset.campo](campo.value);
+    marcar(campo, msg);
+    return msg;
+  };
+
+  /* ---------- inicialização de cada formulário ---------- */
+  function iniciar(form) {
+    const campos = [...form.querySelectorAll('[data-campo]')];
+    const aviso = form.querySelector('.aviso');
+    const ok = form.querySelector('.ok');
+    const botao = form.querySelector('button[type="submit"]');
+
+    campos.forEach(c => {
+      c.addEventListener('input', () => { c.dataset.tocado = '1'; if (c.getAttribute('aria-invalid') === 'true') validar(c); });
+      c.addEventListener('change', () => { c.dataset.tocado = '1'; validar(c); });
+      c.addEventListener('blur', () => { if (c.dataset.tocado) validar(c); });
+    });
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (form.dataset.enviando) return;            // evita envio duplicado
+      ok.textContent = '';
+
+      let primeiro = null, erros = 0;
+      campos.forEach(c => { if (validar(c)) { erros++; primeiro = primeiro || c; } });
+
+      if (erros) {
+        aviso.textContent = erros === 1 ? 'Corrija 1 campo para continuar.' : `Corrija ${erros} campos para continuar.`;
+        primeiro.focus();                           // leva o teclado ao primeiro erro
+        return;
+      }
+      aviso.textContent = '';
+
+      const robo = form.elements.website && form.elements.website.value;
+      if (!robo) {
+        const dados = {};
+        campos.forEach(c => { dados[c.name] = limpar(c.value); });
+        // TODO: enviar "dados" por POST (HTTPS) para a API/Zoho Creator e REVALIDAR no servidor.
+        // Não registre "dados" no console: contém e-mail e telefone.
+      }
+
+      form.dataset.enviando = '1';
+      botao.setAttribute('aria-disabled', 'true');  // aria-disabled mantém o foco no botão
+      ok.textContent = 'Tudo certo! Seus dados foram validados.';
+      setTimeout(() => { delete form.dataset.enviando; botao.removeAttribute('aria-disabled'); }, 3000);
+    });
+  }
+  document.querySelectorAll('form[data-validar]').forEach(iniciar);
+
+  /* ---------- detalhes de cada campo ---------- */
+  const data = document.getElementById('o-data');
+  const max = hoje(); max.setFullYear(max.getFullYear() + 2);
+  data.min = iso(hoje());
+  data.max = iso(max);
+
+  const tel = document.getElementById('c-tel');
+  tel.addEventListener('input', () => {
+    const d = digitos(tel.value).slice(0, 11);
+    let s = d;
+    if (d.length > 2) s = `(${d.slice(0, 2)}) ${d.slice(2)}`;
+    if (d.length > 7) s = `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}`;
+    tel.value = s;
+  });
+
+  const desc = document.getElementById('c-desc');
+  const cont = document.getElementById('c-desc-cont');
+  desc.addEventListener('input', () => { cont.textContent = String(desc.value.length); });
+})();
+</script>
+</body>
+</html>

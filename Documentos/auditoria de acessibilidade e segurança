@@ -1,0 +1,34 @@
+
+Acessibilidade
+
+O campo “Data” do pedido de orçamento aparece como uma lista suspensa vazia, o que atrapalha quem usa teclado ou leitor de tela.
+Correção: trocar por um seletor de data nativo, que não aceita datas passadas.
+
+O laranja usado em textos pequenos sobre o fundo bege tem contraste de cerca de 3,7:1, abaixo do mínimo de 4,5:1, e os placeholders em cinza claro também são fracos.
+Correção: escurecer o laranja do texto (4,7:1) e reforçar a cor dos placeholders (5,2:1).
+
+Os erros de formulário dependiam apenas de cor, ou nem apareciam.
+Correção: exibir cada erro com texto e ícone, marcar o campo com aria-invalid para os leitores de tela e levar o foco ao primeiro campo com problema.
+
+O cabeçalho fixo pode cobrir o campo em foco, não há link para pular o menu e o foco do teclado pode não estar visível.
+Correção: adicionar o link “pular para o conteúdo”, um contorno de foco bem visível e uma margem de rolagem nos destinos.
+
+Os links “Ver talentos” repetidos e o carrossel “arraste para o lado” não funcionam bem por teclado.
+Correção: incluir um aria-label com a categoria em cada link e acrescentar botões de anterior e próximo no carrossel. Essa parte não está no arquivo e fica como tarefa no site.
+
+Segurança
+
+O “Meu painel” mostra valores e contratos (nome “Luiz”, R$ 19.690 contratados) sem login visível.
+Correção: exigir autenticação e conferir no servidor se o contrato pertence a quem está logado. Essa parte também fica como tarefa no site.
+
+Os campos de texto livre, como localização e descrição, permitem injetar HTML ou script.
+Correção: remover < e >, limitar o tamanho dos textos, aceitar nos selects apenas valores previstos e escrever na tela só com textContent, nunca com innerHTML.
+
+Não há proteção contra robôs nem contra envios repetidos.
+Correção: incluir um campo-armadilha, bloquear o envio duplo e definir no servidor um limite de requisições por usuário ou IP.
+
+O cadastro coleta e-mail e telefone sem consentimento nem política de privacidade.
+Correção: não registrar esses dados no console, pedir o consentimento do usuário (LGPD) e publicar uma política de privacidade.
+
+Os dados do banco e o pagamento retido precisam de proteção no servidor.
+Correção: guardar a chave do Zoho Creator só no servidor, calcular o valor retido no servidor e processar cartões apenas por um gateway de pagamento.
