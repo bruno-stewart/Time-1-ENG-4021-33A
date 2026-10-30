@@ -1,0 +1,58 @@
+{# Componentes visuais reutilizados pelas telas (mesmo visual do protótipo no Lovable). #}
+
+{% set rotulo = "font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft" %}
+{% set rotulo_escuro = "font-mono text-[11px] uppercase tracking-[0.15em] text-cream/60" %}
+{% set campo_claro = "mt-2 w-full rounded-xl border border-line bg-paper px-4 py-3 text-sm text-ink outline-none placeholder:text-ink-soft/50 focus:border-stage" %}
+{% set campo_escuro = "mt-2 w-full rounded-lg border border-cream/20 bg-ink px-3 py-2.5 text-sm text-cream placeholder:text-cream/30 ring-1 ring-white/5 focus:border-stage focus:outline-none" %}
+{% set botao_stage = "rounded-full bg-stage px-7 py-3 font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-ink" %}
+{% set botao_contorno = "rounded-full border border-line px-5 py-2.5 text-sm font-semibold transition-colors hover:bg-cream" %}
+
+{% macro estrelas(nota, classe="") -%}
+  <span class="{{ classe }}" aria-label="{{ nota }} de 5 estrelas">
+    {%- for i in range(5) -%}
+      <span class="{% if i < (nota or 0)|round|int %}text-stage{% else %}text-line{% endif %}">★</span>
+    {%- endfor -%}
+  </span>
+{%- endmacro %}
+
+{% macro foto(artista, classe) -%}
+  {% set url = artista|foto_artista %}
+  {% if url %}
+    <img src="{{ url }}" alt="{{ artista.nome_artistico }}" loading="lazy" class="{{ classe }} object-cover">
+  {% else %}
+    <div class="{{ classe }} flex items-center justify-center bg-ink font-display text-2xl uppercase text-cream/80" aria-hidden="true">{{ artista.nome_artistico[:1] }}</div>
+  {% endif %}
+{%- endmacro %}
+
+{% macro selo(texto, tom="neutro") -%}
+  {% set cores = {
+    "stage": "bg-stage/15 text-stage",
+    "ink": "bg-ink/10 text-ink",
+    "aviso": "bg-amber-500/15 text-amber-800",
+    "ok": "bg-ok/15 text-ok",
+    "neutro": "bg-ink/5 text-ink-soft",
+  } %}
+  <span class="inline-flex shrink-0 items-center rounded-full px-3 py-1 font-mono text-[10px] uppercase tracking-[0.12em] {{ cores[tom] }}">{{ texto }}</span>
+{%- endmacro %}
+
+{% macro tom_pagamento(status) -%}
+  {%- if status == 'retido' -%}stage{%- elif status == 'liberado' -%}ink{%- elif status == 'pendente' -%}aviso{%- else -%}neutro{%- endif -%}
+{%- endmacro %}
+
+{% macro vazio(texto) -%}
+  <p class="rounded-2xl border border-dashed border-line bg-cream px-6 py-10 text-center text-sm text-ink-soft">{{ texto }}</p>
+{%- endmacro %}
+
+{% macro kpi(titulo, valor, detalhe) -%}
+  <div class="rounded-2xl border border-line bg-cream p-5 ring-1 ring-black/5">
+    <p class="font-mono text-[11px] uppercase tracking-[0.15em] text-ink-soft">{{ titulo }}</p>
+    <p class="mt-2 font-display text-3xl tracking-tight">{{ valor }}</p>
+    {% if detalhe %}<p class="mt-1 text-xs text-ink-soft">{{ detalhe }}</p>{% endif %}
+  </div>
+{%- endmacro %}
+
+{% macro aba(rotulo_aba, url, ativa, contador=0) -%}
+  <a href="{{ url }}" class="rounded-full px-4 py-2 text-sm font-semibold transition-colors {% if ativa %}bg-ink text-cream{% else %}border border-line text-ink-soft hover:bg-cream hover:text-ink{% endif %}">
+    {{ rotulo_aba }}{% if contador %}<span class="ml-2 rounded-full bg-stage px-2 py-0.5 text-[10px] text-cream">{{ contador }}</span>{% endif %}
+  </a>
+{%- endmacro %}

@@ -13,6 +13,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 
 import db
 from match import calcular_compatibilidade
+from politicas import dividir_valor, link_embed, percentual_reembolso
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "troque-esta-chave-em-producao")
@@ -39,6 +40,14 @@ STATUS_PROPOSTA = [
     ("aceita", "Aceita"),
     ("recusada", "Recusada pelo cliente"),
     ("declinada", "Você recusou"),
+]
+
+MOTIVOS_DENUNCIA = [
+    ("ofensivo", "Conteúdo ofensivo ou discriminatório"),
+    ("falso", "Informação falsa ou avaliação de quem não contratou"),
+    ("spam", "Propaganda ou spam"),
+    ("golpe", "Tentativa de golpe ou pagamento por fora"),
+    ("outro", "Outro motivo"),
 ]
 
 STATUS_CONTRATO = [
@@ -74,6 +83,49 @@ def numero_ou_none(texto):
 # ---------------------------------------------------------------
 # Filtros usados nos templates
 # ---------------------------------------------------------------
+PASTA_FOTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "img")
+
+# palavra no estilo/categoria do artista -> arquivo em static/img
+FOTOS_POR_ESTILO = [
+    ("eletr", "eletronico"),
+    ("dj", "dj"),
+    ("jazz", "jazz"),
+    ("acústico", "folk"),
+    ("folk", "folk"),
+    ("cantor", "jazz"),
+    ("mpb", "jazz"),
+    ("chef", "chef"),
+    ("buffet", "chef"),
+    ("cozinha", "chef"),
+    ("mágic", "magico"),
+    ("foto", "foto"),
+    ("stand", "standup"),
+    ("teatro", "standup"),
+    ("visual", "visual"),
+    ("pintura", "visual"),
+]
+
+
+@app.template_filter("foto_artista")
+def foto_artista(artista):
+    """Devolve a URL da foto do artista, ou "" se não houver foto."""
+    if artista.get("foto_url"):
+        return artista["foto_url"]
+    texto = ""
+    for campo in ["estilo", "categoria", "descricao"]:
+        if artista.get(campo):
+            texto = texto + " " + str(artista[campo]).lower()
+    for palavra, arquivo in FOTOS_POR_ESTILO:
+        if palavra in texto and os.path.exists(os.path.join(PASTA_FOTOS, arquivo + ".jpg")):
+            return url_for("static", filename="img/" + arquivo + ".jpg")
+    return ""
+
+
+@app.template_filter("embed_video")
+def filtro_embed_video(url):
+    return link_embed(url)
+
+
 @app.template_filter("moeda")
 def formatar_moeda(valor):
     if valor is None:
@@ -164,7 +216,35 @@ def destino_painel():
 
 @app.context_processor
 def variaveis_globais():
-    return {"usuario_nome": session.get("nome"), "usuario_papel": session.get("papel")}
+    notificacoes_novas = 0
+    if "usuario_id" in session:
+        linha = db.buscar_um(
+            "SELECT COUNT(*) AS total FROM notificacoes WHERE user_id = %s AND lida = FALSE",
+            (session["usuario_id"],),
+        )
+        notificacoes_novas = linha["total"]
+    return {
+        "usuario_nome": session.get("nome"),
+        "usuario_papel": session.get("papel"),
+        "notificacoes_novas": notificacoes_novas,
+    }
+
+
+def notificar(user_id, tipo, texto, link):
+    """Cria um aviso no sino do usuário. Artista sem conta (user_id vazio) é ignorado."""
+    if user_id is None:
+        return
+    db.executar(
+        "INSERT INTO notificacoes (user_id, tipo, texto, link) VALUES (%s, %s, %s, %s)",
+        (user_id, tipo, texto[:200], link),
+    )
+
+
+def dono_do_artista(artista_id):
+    linha = db.buscar_um("SELECT user_id FROM artistas WHERE id = %s", (artista_id,))
+    if linha is None:
+        return None
+    return linha["user_id"]
 
 
 # ---------------------------------------------------------------
@@ -230,9 +310,15 @@ def index():
         "JOIN artistas a ON a.id = av.artista_id "
         "JOIN contratos c ON c.id = av.contrato_id "
         "JOIN eventos e ON e.id = c.evento_id "
-        "WHERE av.comentario IS NOT NULL "
+        "WHERE av.comentario IS NOT NULL AND av.oculta = FALSE "
         "ORDER BY av.criado_em DESC LIMIT 3"
     )
+    totais = db.buscar_um(
+        "SELECT COUNT(*) AS artistas, COUNT(DISTINCT cidade) AS cidades FROM artistas WHERE ativo = TRUE"
+    )
+    foto_hero = ""
+    if os.path.exists(os.path.join(PASTA_FOTOS, "hero.jpg")):
+        foto_hero = url_for("static", filename="img/hero.jpg")
     return render_template(
         "index.html",
         artistas=artistas,
@@ -243,6 +329,9 @@ def index():
         orcamento_atual=orcamento_texto,
         data_atual=data_texto,
         usar_match=usar_match,
+        total_artistas=totais["artistas"],
+        total_cidades=totais["cidades"],
+        foto_hero=foto_hero,
     )
 
 
@@ -251,16 +340,35 @@ def artista_detalhe(artista_id):
     artista = None
     if id_valido(artista_id):
         artista = db.buscar_um("SELECT * FROM vw_artistas WHERE id = %s", (artista_id,))
+    # perfil suspenso pela moderação só continua visível para o administrador
+    if artista is not None and not artista["ativo"] and session.get("papel") != "admin":
+        artista = None
     if artista is None:
         flash("Artista não encontrado.", "erro")
         return redirect(url_for("index"))
     avaliacoes = db.buscar_todos(
-        "SELECT av.nota, av.comentario, av.criado_em, p.nome AS cliente "
+        "SELECT av.id, av.nota, av.comentario, av.criado_em, p.nome AS cliente "
         "FROM avaliacoes av JOIN profiles p ON p.id = av.cliente_id "
-        "WHERE av.artista_id = %s ORDER BY av.criado_em DESC",
+        "WHERE av.artista_id = %s AND av.oculta = FALSE ORDER BY av.criado_em DESC",
         (artista_id,),
     )
-    return render_template("artista.html", artista=artista, avaliacoes=avaliacoes)
+    portfolio = db.buscar_todos(
+        "SELECT * FROM portfolio WHERE artista_id = %s ORDER BY criado_em", (artista_id,)
+    )
+    favorito = False
+    if session.get("papel") == "cliente":
+        favorito = db.buscar_um(
+            "SELECT 1 FROM favoritos WHERE cliente_id = %s AND artista_id = %s",
+            (session["usuario_id"], artista_id),
+        ) is not None
+    return render_template(
+        "artista.html",
+        artista=artista,
+        avaliacoes=avaliacoes,
+        portfolio=portfolio,
+        favorito=favorito,
+        motivos=MOTIVOS_DENUNCIA,
+    )
 
 
 # ---------------------------------------------------------------
@@ -479,7 +587,7 @@ def cadastro():
             flash(erro, "erro")
         return render_template("cadastro.html", categorias=categorias, form=form), 400
 
-    return render_template("cadastro.html", categorias=categorias, form={})
+    return render_template("cadastro.html", categorias=categorias, form=request.args)
 
 
 # ---------------------------------------------------------------
@@ -492,20 +600,25 @@ def painel():
         return redirect(url_for("artista_painel"))
 
     usuario_id = session["usuario_id"]
-    aba = request.args.get("aba", "historico")
+    aba = request.args.get("aba", "visao")
 
     indicadores = db.buscar_um("SELECT * FROM vw_painel_cliente WHERE cliente_id = %s", (usuario_id,))
     contratos = db.buscar_todos(
-        "SELECT c.*, a.nome_artistico, a.estilo, e.tipo, pg.status AS status_pagamento, "
+        "SELECT c.*, a.nome_artistico, a.estilo, a.foto_url, a.user_id AS artista_user_id, e.tipo, "
+        "(SELECT pg.status FROM pagamentos pg WHERE pg.contrato_id = c.id ORDER BY pg.criado_em LIMIT 1) AS status_pagamento, "
         "av.id AS avaliacao_id, av.nota AS minha_nota, "
-        "(c.data_evento <= CURRENT_DATE) AS ja_aconteceu "
+        "ca.valor_reembolso, ca.percentual_reembolso, ca.cancelado_por, "
+        "(SELECT COUNT(*) FROM mensagens m WHERE m.contrato_id = c.id) AS total_mensagens, "
+        "(SELECT COUNT(*) FROM mensagens m WHERE m.contrato_id = c.id AND m.destinatario_id = %s AND m.lida = FALSE) AS mensagens_novas, "
+        "(c.data_evento <= CURRENT_DATE) AS ja_aconteceu, "
+        "(c.data_evento >= CURRENT_DATE) AS no_futuro "
         "FROM contratos c "
         "JOIN artistas a ON a.id = c.artista_id "
         "JOIN eventos e ON e.id = c.evento_id "
-        "LEFT JOIN pagamentos pg ON pg.contrato_id = c.id "
         "LEFT JOIN avaliacoes av ON av.contrato_id = c.id "
+        "LEFT JOIN cancelamentos ca ON ca.contrato_id = c.id "
         "WHERE c.cliente_id = %s ORDER BY c.data_evento DESC",
-        (usuario_id,),
+        (usuario_id, usuario_id),
     )
     pedidos = db.buscar_todos(
         "SELECT po.*, cat.nome AS categoria, e.tipo FROM pedidos_orcamento po "
@@ -522,11 +635,17 @@ def painel():
         "WHERE e.cliente_id = %s AND pr.status <> 'declinada' ORDER BY pr.valor",
         (usuario_id,),
     )
+    # mensagens antigas que não estão ligadas a nenhum contrato
     mensagens = db.buscar_todos(
         "SELECT m.*, p.nome AS remetente FROM mensagens m "
         "JOIN profiles p ON p.id = m.remetente_id "
-        "WHERE m.destinatario_id = %s OR m.remetente_id = %s ORDER BY m.enviada_em",
+        "WHERE m.contrato_id IS NULL AND (m.destinatario_id = %s OR m.remetente_id = %s) ORDER BY m.enviada_em",
         (usuario_id, usuario_id),
+    )
+    favoritos = db.buscar_todos(
+        "SELECT a.*, f.criado_em AS salvo_em FROM favoritos f JOIN vw_artistas a ON a.id = f.artista_id "
+        "WHERE f.cliente_id = %s AND a.ativo = TRUE ORDER BY f.criado_em DESC",
+        (usuario_id,),
     )
     return render_template(
         "painel.html",
@@ -536,6 +655,7 @@ def painel():
         pedidos=pedidos,
         propostas=propostas,
         mensagens=mensagens,
+        favoritos=favoritos,
         usuario_id=usuario_id,
     )
 
@@ -586,7 +706,10 @@ def aceitar_proposta(proposta_id):
          "ON CONFLICT (artista_id, data) DO UPDATE SET status = 'ocupado', observacao = 'Contrato ArtConnect'",
          (proposta["artista_id"], data_final)),
     ])
-    flash("Proposta de " + proposta["nome_artistico"] + " aceita! O contrato já está no seu histórico.", "ok")
+    notificar(dono_do_artista(proposta["artista_id"]), "contrato",
+              session["nome"] + " aceitou sua proposta para " + data_final.strftime("%d/%m/%Y") + ".",
+              "/artista/painel?aba=agenda")
+    flash("Proposta de " + proposta["nome_artistico"] + " aceita! Agora é só fazer o pagamento.", "ok")
     return redirect(url_for("painel", aba="historico"))
 
 
@@ -598,6 +721,8 @@ def recusar_proposta(proposta_id):
         flash("Essa proposta não pode ser recusada.", "erro")
         return redirect(url_for("painel", aba="pedidos"))
     db.executar("UPDATE propostas SET status = 'recusada' WHERE id = %s", (proposta["id"],))
+    notificar(dono_do_artista(proposta["artista_id"]), "proposta",
+              session["nome"] + " recusou sua proposta.", "/artista/painel?aba=propostas")
     flash("Proposta recusada.", "ok")
     return redirect(url_for("painel", aba="pedidos"))
 
@@ -666,6 +791,8 @@ def avaliar_contrato(contrato_id):
                     "VALUES (%s, %s, %s, %s, %s)",
                     (contrato["id"], contrato["artista_id"], session["usuario_id"], int(nota), comentario),
                 )
+                notificar(dono_do_artista(contrato["artista_id"]), "avaliacao",
+                          "Você recebeu uma avaliação nota " + nota + ".", "/artista/painel?aba=avaliacoes")
                 flash("Obrigado pela avaliação! Ela já aparece no perfil de " + contrato["nome_artistico"] + ".", "ok")
                 return redirect(url_for("artista_detalhe", artista_id=contrato["artista_id"]))
             except errors.UniqueViolation:
@@ -710,12 +837,17 @@ def artista_painel():
         (artista["id"],),
     )
     contratos = db.buscar_todos(
-        "SELECT c.*, p.nome AS cliente, e.tipo FROM contratos c "
+        "SELECT c.*, p.nome AS cliente, e.tipo, "
+        "(SELECT COUNT(*) FROM mensagens m WHERE m.contrato_id = c.id AND m.destinatario_id = %s AND m.lida = FALSE) AS mensagens_novas "
+        "FROM contratos c "
         "JOIN profiles p ON p.id = c.cliente_id "
         "JOIN eventos e ON e.id = c.evento_id "
         "WHERE c.artista_id = %s AND c.data_evento >= CURRENT_DATE AND c.status <> 'cancelado' "
         "ORDER BY c.data_evento",
-        (artista["id"],),
+        (session["usuario_id"], artista["id"]),
+    )
+    portfolio = db.buscar_todos(
+        "SELECT * FROM portfolio WHERE artista_id = %s ORDER BY criado_em", (artista["id"],)
     )
     agenda = db.buscar_todos(
         "SELECT * FROM disponibilidade WHERE artista_id = %s AND data >= CURRENT_DATE ORDER BY data",
@@ -723,7 +855,7 @@ def artista_painel():
     )
     avaliacoes = db.buscar_todos(
         "SELECT av.*, p.nome AS cliente FROM avaliacoes av JOIN profiles p ON p.id = av.cliente_id "
-        "WHERE av.artista_id = %s ORDER BY av.criado_em DESC",
+        "WHERE av.artista_id = %s AND av.oculta = FALSE ORDER BY av.criado_em DESC",
         (artista["id"],),
     )
 
@@ -741,6 +873,8 @@ def artista_painel():
         contratos=contratos,
         agenda=agenda,
         avaliacoes=avaliacoes,
+        portfolio=portfolio,
+        limite_portfolio=LIMITE_PORTFOLIO,
         aguardando=aguardando,
         hoje=date.today().isoformat(),
     )
@@ -817,6 +951,11 @@ def responder_pedido(pedido_id):
             ("UPDATE pedidos_orcamento SET status = 'com_propostas' WHERE id = %s AND status = 'aberto'",
              (pedido["id"],)),
         ])
+        dono_pedido = db.buscar_um("SELECT cliente_id FROM eventos WHERE id = %s", (pedido["evento_id"],))
+        texto_aviso = artista["nome_artistico"] + " enviou uma proposta de " + formatar_moeda(valor) + "."
+        if acao == "contraproposta":
+            texto_aviso = artista["nome_artistico"] + " sugeriu outra data: " + data_sugerida.strftime("%d/%m/%Y") + "."
+        notificar(dono_pedido["cliente_id"], "proposta", texto_aviso, "/painel?aba=pedidos")
         if acao == "contraproposta":
             flash("Contraproposta enviada! O cliente vai ver a nova data no painel dele.", "ok")
         else:
@@ -1040,7 +1179,8 @@ def admin_dashboard():
         "(SELECT COALESCE(SUM(valor_total), 0) FROM contratos WHERE status <> 'cancelado') AS volume, "
         "(SELECT COALESCE(SUM(valor), 0) FROM pagamentos WHERE status = 'retido') AS retido, "
         "(SELECT ROUND(AVG(nota), 1) FROM avaliacoes) AS nota_media, "
-        "(SELECT COUNT(*) FROM avaliacoes) AS avaliacoes"
+        "(SELECT COUNT(*) FROM avaliacoes) AS avaliacoes, "
+        "(SELECT COUNT(*) FROM denuncias WHERE status = 'aberta') AS denuncias_abertas"
     )
     pedidos_por_status = db.buscar_todos(
         "SELECT status, COUNT(*) AS total FROM pedidos_orcamento GROUP BY status ORDER BY total DESC"
@@ -1084,6 +1224,492 @@ def admin_dashboard():
         conversao=conversao,
         maior=maior,
     )
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Pagamento simulado (o valor fica retido até o evento)
+# ---------------------------------------------------------------
+METODOS_PAGAMENTO = [
+    ("pix", "Pix"),
+    ("boleto", "Boleto bancário"),
+]
+
+
+@app.route("/contratos/<contrato_id>/pagar", methods=["GET", "POST"])
+@login_obrigatorio
+def pagar_contrato(contrato_id):
+    contrato = contrato_do_cliente(contrato_id)
+    if contrato is None:
+        flash("Contrato não encontrado.", "erro")
+        return redirect(url_for("painel", aba="historico"))
+    if contrato["status"] != "aguardando_pagamento":
+        flash("Esse contrato não está aguardando pagamento.", "erro")
+        return redirect(url_for("painel", aba="historico"))
+    if contrato["data_evento"] < date.today():
+        flash("A data desse evento já passou. Cancele o contrato ou fale com o artista.", "erro")
+        return redirect(url_for("painel", aba="historico"))
+
+    if request.method == "POST":
+        metodo = request.form.get("metodo", "")
+        if metodo not in ("pix", "boleto"):
+            flash("Escolha a forma de pagamento.", "erro")
+            return render_template("pagar.html", contrato=contrato, metodos=METODOS_PAGAMENTO), 400
+        if request.form.get("ciente") != "on":
+            flash("Confirme que leu como funciona a retenção do valor.", "erro")
+            return render_template("pagar.html", contrato=contrato, metodos=METODOS_PAGAMENTO), 400
+        db.transacao([
+            ("UPDATE pagamentos SET status = 'retido', metodo = %s, pago_em = now() "
+             "WHERE contrato_id = %s AND status = 'pendente'", (metodo, contrato["id"])),
+            ("UPDATE contratos SET status = 'valor_retido' WHERE id = %s", (contrato["id"],)),
+        ])
+        notificar(dono_do_artista(contrato["artista_id"]), "pagamento",
+                  "Pagamento de " + formatar_moeda(contrato["valor_total"]) + " confirmado para "
+                  + contrato["data_evento"].strftime("%d/%m/%Y") + ". O valor fica retido até o evento.",
+                  "/artista/painel?aba=agenda")
+        flash("Pagamento confirmado! O valor fica retido e só vai para o artista depois do evento.", "ok")
+        return redirect(url_for("painel", aba="pagamentos"))
+
+    return render_template("pagar.html", contrato=contrato, metodos=METODOS_PAGAMENTO)
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Cancelamento com reembolso (política da Sprint 6)
+# ---------------------------------------------------------------
+def simular_cancelamento(contrato, cancelado_por):
+    """Calcula o reembolso de um contrato sem gravar nada."""
+    dias = (contrato["data_evento"] - date.today()).days
+    horas = (datetime.now(timezone.utc) - contrato["criado_em"]).total_seconds() / 3600
+    percentual = percentual_reembolso(cancelado_por, dias, horas)
+    pagamento = db.buscar_um(
+        "SELECT * FROM pagamentos WHERE contrato_id = %s ORDER BY criado_em LIMIT 1", (contrato["id"],)
+    )
+    valor_pago = 0
+    if pagamento is not None and pagamento["status"] == "retido":
+        valor_pago = pagamento["valor"]
+    reembolso, parte_artista = dividir_valor(valor_pago, percentual)
+    return {
+        "dias": dias,
+        "percentual": percentual,
+        "pagamento": pagamento,
+        "valor_pago": valor_pago,
+        "reembolso": reembolso,
+        "parte_artista": parte_artista,
+    }
+
+
+def cancelar(contrato, cancelado_por, motivo):
+    calculo = simular_cancelamento(contrato, cancelado_por)
+    comandos = [
+        ("UPDATE contratos SET status = 'cancelado' WHERE id = %s", (contrato["id"],)),
+        ("INSERT INTO cancelamentos (contrato_id, cancelado_por, motivo, dias_antecedencia, "
+         "percentual_reembolso, valor_reembolso, valor_artista) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+         (contrato["id"], cancelado_por, motivo, calculo["dias"], calculo["percentual"],
+          calculo["reembolso"], calculo["parte_artista"])),
+        # a data volta a ficar livre na agenda do artista
+        ("DELETE FROM disponibilidade WHERE artista_id = %s AND data = %s AND observacao = 'Contrato ArtConnect'",
+         (contrato["artista_id"], contrato["data_evento"])),
+    ]
+    pagamento = calculo["pagamento"]
+    if pagamento is not None and pagamento["status"] == "pendente":
+        # nada foi pago: o pagamento pendente deixa de existir
+        comandos.append(("DELETE FROM pagamentos WHERE id = %s", (pagamento["id"],)))
+    elif pagamento is not None and pagamento["status"] == "retido":
+        if calculo["parte_artista"] == 0:
+            comandos.append(("UPDATE pagamentos SET status = 'reembolsado' WHERE id = %s", (pagamento["id"],)))
+        elif calculo["reembolso"] == 0:
+            comandos.append(("UPDATE pagamentos SET status = 'liberado', liberado_em = now() WHERE id = %s",
+                             (pagamento["id"],)))
+        else:
+            # reembolso parcial: o pagamento se divide em duas linhas
+            comandos.append(("UPDATE pagamentos SET status = 'reembolsado', valor = %s WHERE id = %s",
+                             (calculo["reembolso"], pagamento["id"])))
+            comandos.append(("INSERT INTO pagamentos (contrato_id, valor, metodo, status, pago_em, liberado_em) "
+                             "VALUES (%s, %s, %s, 'liberado', %s, now())",
+                             (contrato["id"], calculo["parte_artista"], pagamento["metodo"], pagamento["pago_em"])))
+    if cancelado_por == "artista" and contrato["proposta_id"] is not None:
+        # o pedido volta a ficar aberto para outros artistas da categoria
+        comandos.append(("UPDATE pedidos_orcamento SET status = 'aberto' WHERE status = 'fechado' AND data_evento >= CURRENT_DATE "
+                         "AND id = (SELECT pedido_id FROM propostas WHERE id = %s)", (contrato["proposta_id"],)))
+    db.transacao(comandos)
+    return calculo
+
+
+def pode_cancelar(contrato):
+    return contrato["status"] in ("aguardando_pagamento", "valor_retido") and contrato["data_evento"] >= date.today()
+
+
+@app.route("/contratos/<contrato_id>/cancelar", methods=["GET", "POST"])
+@login_obrigatorio
+def cancelar_contrato(contrato_id):
+    contrato = contrato_do_cliente(contrato_id)
+    if contrato is None or not pode_cancelar(contrato):
+        flash("Esse contrato não pode ser cancelado.", "erro")
+        return redirect(url_for("painel", aba="historico"))
+
+    if request.method == "POST":
+        motivo = request.form.get("motivo", "").strip()
+        if len(motivo) < 5 or len(motivo) > 300:
+            flash("Conte o motivo do cancelamento (5 a 300 caracteres).", "erro")
+        elif request.form.get("confirmo") != "on":
+            flash("Marque a caixa confirmando que leu as regras de reembolso.", "erro")
+        else:
+            calculo = cancelar(contrato, "cliente", motivo)
+            notificar(dono_do_artista(contrato["artista_id"]), "cancelamento",
+                      session["nome"] + " cancelou o evento de " + contrato["data_evento"].strftime("%d/%m/%Y")
+                      + ". Sua parte: " + formatar_moeda(calculo["parte_artista"]) + ".",
+                      "/artista/painel?aba=agenda")
+            flash("Contrato cancelado. Reembolso de " + formatar_moeda(calculo["reembolso"]) + " ("
+                  + str(calculo["percentual"]) + "% do valor pago).", "ok")
+            return redirect(url_for("painel", aba="historico"))
+        return render_template("cancelar.html", contrato=contrato,
+                               calculo=simular_cancelamento(contrato, "cliente")), 400
+
+    return render_template("cancelar.html", contrato=contrato, calculo=simular_cancelamento(contrato, "cliente"))
+
+
+@app.route("/artista/contratos/<contrato_id>/cancelar", methods=["POST"])
+@login_obrigatorio
+@artista_obrigatorio
+def artista_cancelar_contrato(contrato_id):
+    artista = artista_logado()
+    contrato = None
+    if id_valido(contrato_id):
+        contrato = db.buscar_um("SELECT * FROM contratos WHERE id = %s AND artista_id = %s",
+                                (contrato_id, artista["id"]))
+    motivo = request.form.get("motivo", "").strip()
+    if contrato is None or not pode_cancelar(contrato):
+        flash("Esse contrato não pode ser cancelado.", "erro")
+    elif len(motivo) < 5 or len(motivo) > 300:
+        flash("Conte ao cliente o motivo do cancelamento (5 a 300 caracteres).", "erro")
+    else:
+        calculo = cancelar(contrato, "artista", motivo)
+        notificar(contrato["cliente_id"], "cancelamento",
+                  artista["nome_artistico"] + " cancelou o evento de " + contrato["data_evento"].strftime("%d/%m/%Y")
+                  + ". Você recebe 100% de volta.", "/painel?aba=historico")
+        anteriores = db.buscar_um(
+            "SELECT COUNT(*) AS total FROM cancelamentos ca JOIN contratos c ON c.id = ca.contrato_id "
+            "WHERE c.artista_id = %s AND ca.cancelado_por = 'artista' AND ca.criado_em >= now() - INTERVAL '12 months'",
+            (artista["id"],),
+        )
+        flash("Contrato cancelado e cliente reembolsado em " + formatar_moeda(calculo["reembolso"]) + ".", "ok")
+        if anteriores["total"] >= 2:
+            flash("Atenção: este é o seu cancelamento nº " + str(anteriores["total"])
+                  + " em 12 meses. Pela política, o perfil pode ser suspenso por 30 dias.", "erro")
+        else:
+            flash("Advertência: cancelamentos pelo artista contam para a política de suspensão.", "erro")
+    return redirect(url_for("artista_painel", aba="agenda"))
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Artistas favoritos
+# ---------------------------------------------------------------
+@app.route("/artistas/<artista_id>/favorito", methods=["POST"])
+@login_obrigatorio
+def alternar_favorito(artista_id):
+    if session.get("papel") != "cliente":
+        flash("Só clientes podem salvar artistas favoritos.", "erro")
+        return redirect(url_for("index"))
+    artista = None
+    if id_valido(artista_id):
+        artista = db.buscar_um("SELECT id, nome_artistico FROM artistas WHERE id = %s AND ativo = TRUE", (artista_id,))
+    if artista is None:
+        flash("Artista não encontrado.", "erro")
+        return redirect(url_for("index"))
+
+    existe = db.buscar_um("SELECT 1 FROM favoritos WHERE cliente_id = %s AND artista_id = %s",
+                          (session["usuario_id"], artista["id"]))
+    if existe is None:
+        db.executar("INSERT INTO favoritos (cliente_id, artista_id) VALUES (%s, %s) ON CONFLICT DO NOTHING",
+                    (session["usuario_id"], artista["id"]))
+        flash(artista["nome_artistico"] + " foi salvo nos seus favoritos.", "ok")
+    else:
+        db.executar("DELETE FROM favoritos WHERE cliente_id = %s AND artista_id = %s",
+                    (session["usuario_id"], artista["id"]))
+        flash(artista["nome_artistico"] + " saiu dos seus favoritos.", "ok")
+
+    voltar = request.form.get("voltar", "")
+    if voltar.startswith("/") and not voltar.startswith("//"):
+        return redirect(voltar)
+    return redirect(url_for("artista_detalhe", artista_id=artista["id"]))
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Central de notificações
+# ---------------------------------------------------------------
+@app.route("/notificacoes")
+@login_obrigatorio
+def notificacoes():
+    lista = db.buscar_todos(
+        "SELECT * FROM notificacoes WHERE user_id = %s ORDER BY criada_em DESC LIMIT 50",
+        (session["usuario_id"],),
+    )
+    return render_template("notificacoes.html", notificacoes=lista)
+
+
+@app.route("/notificacoes/<notificacao_id>/abrir", methods=["POST"])
+@login_obrigatorio
+def abrir_notificacao(notificacao_id):
+    aviso = None
+    if id_valido(notificacao_id):
+        aviso = db.buscar_um("SELECT * FROM notificacoes WHERE id = %s AND user_id = %s",
+                             (notificacao_id, session["usuario_id"]))
+    if aviso is None:
+        flash("Notificação não encontrada.", "erro")
+        return redirect(url_for("notificacoes"))
+    db.executar("UPDATE notificacoes SET lida = TRUE WHERE id = %s", (aviso["id"],))
+    link = aviso["link"] or ""
+    if link.startswith("/") and not link.startswith("//"):
+        return redirect(link)
+    return redirect(url_for("notificacoes"))
+
+
+@app.route("/notificacoes/ler-todas", methods=["POST"])
+@login_obrigatorio
+def ler_todas_notificacoes():
+    db.executar("UPDATE notificacoes SET lida = TRUE WHERE user_id = %s AND lida = FALSE", (session["usuario_id"],))
+    flash("Todas as notificações foram marcadas como lidas.", "ok")
+    return redirect(url_for("notificacoes"))
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Conversa entre cliente e artista dentro do contrato
+# ---------------------------------------------------------------
+def contrato_da_conversa(contrato_id):
+    """Contrato que o usuário logado pode ver: ele é o cliente ou o artista."""
+    if not id_valido(contrato_id):
+        return None
+    return db.buscar_um(
+        "SELECT c.*, a.nome_artistico, a.user_id AS artista_user_id, a.estilo, a.categoria_id, a.foto_url, "
+        "p.nome AS cliente FROM contratos c "
+        "JOIN artistas a ON a.id = c.artista_id JOIN profiles p ON p.id = c.cliente_id "
+        "WHERE c.id = %s AND (c.cliente_id = %s OR a.user_id = %s)",
+        (contrato_id, session["usuario_id"], session["usuario_id"]),
+    )
+
+
+@app.route("/contratos/<contrato_id>/conversa", methods=["GET", "POST"])
+@login_obrigatorio
+def conversa(contrato_id):
+    contrato = contrato_da_conversa(contrato_id)
+    if contrato is None:
+        flash("Conversa não encontrada.", "erro")
+        return redirect(destino_painel())
+
+    sou_cliente = str(contrato["cliente_id"]) == session["usuario_id"]
+    outro_id = contrato["artista_user_id"] if sou_cliente else contrato["cliente_id"]
+
+    if request.method == "POST":
+        conteudo = request.form.get("conteudo", "").strip()
+        if outro_id is None:
+            flash("Esse artista ainda não tem conta na plataforma para responder mensagens.", "erro")
+        elif contrato["status"] == "cancelado":
+            flash("Não dá para enviar mensagens em um contrato cancelado.", "erro")
+        elif conteudo == "" or len(conteudo) > 1000:
+            flash("Escreva uma mensagem de até 1000 caracteres.", "erro")
+        else:
+            db.executar(
+                "INSERT INTO mensagens (contrato_id, remetente_id, destinatario_id, conteudo) VALUES (%s, %s, %s, %s)",
+                (contrato["id"], session["usuario_id"], outro_id, conteudo),
+            )
+            notificar(outro_id, "mensagem", session["nome"] + ": " + conteudo[:120],
+                      url_for("conversa", contrato_id=contrato["id"]))
+        return redirect(url_for("conversa", contrato_id=contrato["id"]) + "#fim")
+
+    # abrir a conversa marca como lidas as mensagens recebidas
+    db.executar("UPDATE mensagens SET lida = TRUE WHERE contrato_id = %s AND destinatario_id = %s AND lida = FALSE",
+                (contrato["id"], session["usuario_id"]))
+    mensagens = db.buscar_todos(
+        "SELECT m.*, p.nome AS remetente FROM mensagens m JOIN profiles p ON p.id = m.remetente_id "
+        "WHERE m.contrato_id = %s ORDER BY m.enviada_em",
+        (contrato["id"],),
+    )
+    return render_template("conversa.html", contrato=contrato, mensagens=mensagens,
+                           sou_cliente=sou_cliente, pode_responder=outro_id is not None and contrato["status"] != "cancelado",
+                           usuario_id=session["usuario_id"])
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Denúncias e moderação
+# ---------------------------------------------------------------
+@app.route("/denunciar", methods=["POST"])
+@login_obrigatorio
+def denunciar():
+    alvo = request.form.get("alvo", "")
+    alvo_id = request.form.get("alvo_id", "")
+    motivo = request.form.get("motivo", "")
+    detalhes = request.form.get("detalhes", "").strip()
+
+    artista_id = None
+    avaliacao_id = None
+    if id_valido(alvo_id) and alvo == "artista":
+        linha = db.buscar_um("SELECT id FROM artistas WHERE id = %s", (alvo_id,))
+        if linha is not None:
+            artista_id = linha["id"]
+            voltar = linha["id"]
+    elif id_valido(alvo_id) and alvo == "avaliacao":
+        linha = db.buscar_um("SELECT id, artista_id FROM avaliacoes WHERE id = %s", (alvo_id,))
+        if linha is not None:
+            avaliacao_id = linha["id"]
+            voltar = linha["artista_id"]
+    if artista_id is None and avaliacao_id is None:
+        flash("Conteúdo não encontrado.", "erro")
+        return redirect(url_for("index"))
+
+    codigos = []
+    for item in MOTIVOS_DENUNCIA:
+        codigos.append(item[0])
+    if motivo not in codigos:
+        flash("Escolha o motivo da denúncia.", "erro")
+    elif len(detalhes) > 500:
+        flash("Os detalhes podem ter no máximo 500 caracteres.", "erro")
+    else:
+        try:
+            db.executar(
+                "INSERT INTO denuncias (denunciante_id, artista_id, avaliacao_id, motivo, detalhes) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (session["usuario_id"], artista_id, avaliacao_id, motivo, detalhes or None),
+            )
+            flash("Denúncia enviada. A equipe analisa em até 48 horas e você recebe a resposta nas notificações.", "ok")
+        except errors.UniqueViolation:
+            flash("Você já denunciou esse conteúdo e a análise ainda está aberta.", "erro")
+    return redirect(url_for("artista_detalhe", artista_id=voltar))
+
+
+@app.route("/admin/denuncias")
+@login_obrigatorio
+@admin_obrigatorio
+def admin_denuncias():
+    filtro = request.args.get("status", "aberta")
+    if filtro not in ("aberta", "procedente", "improcedente"):
+        filtro = "aberta"
+    denuncias = db.buscar_todos(
+        "SELECT d.*, p.nome AS denunciante, "
+        "COALESCE(a.nome_artistico, a2.nome_artistico) AS artista, COALESCE(a.id, a2.id) AS artista_ref, "
+        "a.ativo AS artista_ativo, av.comentario, av.nota, av.oculta, pc.nome AS autor_avaliacao "
+        "FROM denuncias d "
+        "JOIN profiles p ON p.id = d.denunciante_id "
+        "LEFT JOIN artistas a ON a.id = d.artista_id "
+        "LEFT JOIN avaliacoes av ON av.id = d.avaliacao_id "
+        "LEFT JOIN artistas a2 ON a2.id = av.artista_id "
+        "LEFT JOIN profiles pc ON pc.id = av.cliente_id "
+        "WHERE d.status = %s ORDER BY d.criada_em",
+        (filtro,),
+    )
+    contagem = db.buscar_todos("SELECT status, COUNT(*) AS total FROM denuncias GROUP BY status")
+    totais = {"aberta": 0, "procedente": 0, "improcedente": 0}
+    for linha in contagem:
+        totais[linha["status"]] = linha["total"]
+    return render_template("denuncias.html", denuncias=denuncias, filtro=filtro, totais=totais,
+                           motivos=dict(MOTIVOS_DENUNCIA))
+
+
+@app.route("/admin/denuncias/<denuncia_id>/decidir", methods=["POST"])
+@login_obrigatorio
+@admin_obrigatorio
+def decidir_denuncia(denuncia_id):
+    denuncia = None
+    if id_valido(denuncia_id):
+        denuncia = db.buscar_um("SELECT * FROM denuncias WHERE id = %s AND status = 'aberta'", (denuncia_id,))
+    if denuncia is None:
+        flash("Denúncia não encontrada ou já decidida.", "erro")
+        return redirect(url_for("admin_denuncias"))
+
+    decisao = request.form.get("decisao", "")
+    justificativa = request.form.get("justificativa", "").strip()
+    if decisao not in ("procedente", "improcedente"):
+        flash("Escolha uma decisão.", "erro")
+        return redirect(url_for("admin_denuncias"))
+    if len(justificativa) < 5 or len(justificativa) > 300:
+        flash("Escreva a justificativa da decisão (5 a 300 caracteres).", "erro")
+        return redirect(url_for("admin_denuncias"))
+
+    comandos = [
+        ("UPDATE denuncias SET status = %s, decisao = %s, resolvida_em = now() WHERE id = %s",
+         (decisao, justificativa, denuncia["id"])),
+    ]
+    if decisao == "procedente":
+        if denuncia["avaliacao_id"] is not None:
+            comandos.append(("UPDATE avaliacoes SET oculta = TRUE WHERE id = %s", (denuncia["avaliacao_id"],)))
+            # outras denúncias abertas sobre a mesma avaliação são resolvidas junto
+            comandos.append(("UPDATE denuncias SET status = 'procedente', decisao = %s, resolvida_em = now() "
+                             "WHERE avaliacao_id = %s AND status = 'aberta'", (justificativa, denuncia["avaliacao_id"])))
+        else:
+            comandos.append(("UPDATE artistas SET ativo = FALSE WHERE id = %s", (denuncia["artista_id"],)))
+            comandos.append(("UPDATE denuncias SET status = 'procedente', decisao = %s, resolvida_em = now() "
+                             "WHERE artista_id = %s AND status = 'aberta'", (justificativa, denuncia["artista_id"])))
+    db.transacao(comandos)
+
+    texto = "Sua denúncia foi analisada: "
+    if decisao == "procedente":
+        texto = texto + "o conteúdo foi removido. Obrigado por ajudar!"
+    else:
+        texto = texto + "não encontramos violação das regras."
+    notificar(denuncia["denunciante_id"], "moderacao", texto, "/notificacoes")
+    if decisao == "procedente" and denuncia["artista_id"] is not None:
+        notificar(dono_do_artista(denuncia["artista_id"]), "moderacao",
+                  "Seu perfil foi suspenso pela moderação: " + justificativa, "/artista/painel")
+    flash("Decisão registrada.", "ok")
+    return redirect(url_for("admin_denuncias"))
+
+
+@app.route("/admin/artistas/<artista_id>/reativar", methods=["POST"])
+@login_obrigatorio
+@admin_obrigatorio
+def reativar_artista(artista_id):
+    if id_valido(artista_id):
+        db.executar("UPDATE artistas SET ativo = TRUE WHERE id = %s", (artista_id,))
+        notificar(dono_do_artista(artista_id), "moderacao", "Seu perfil foi reativado e voltou para a busca.",
+                  "/artista/painel")
+        flash("Perfil reativado.", "ok")
+    return redirect(url_for("admin_denuncias", status="procedente"))
+
+
+# ---------------------------------------------------------------
+# Sprint 7 · Portfólio do artista
+# ---------------------------------------------------------------
+LIMITE_PORTFOLIO = 12
+
+
+@app.route("/artista/portfolio", methods=["POST"])
+@login_obrigatorio
+@artista_obrigatorio
+def adicionar_portfolio():
+    artista = artista_logado()
+    tipo = request.form.get("tipo", "")
+    titulo = request.form.get("titulo", "").strip()
+    url = request.form.get("url", "").strip()
+
+    total = db.buscar_um("SELECT COUNT(*) AS total FROM portfolio WHERE artista_id = %s", (artista["id"],))
+    erros = []
+    if tipo not in ("foto", "video", "audio"):
+        erros.append("Escolha o tipo do item.")
+    if len(titulo) < 3 or len(titulo) > 80:
+        erros.append("O título precisa ter de 3 a 80 caracteres.")
+    if not url.startswith("https://") or len(url) > 500 or " " in url:
+        erros.append("Cole um link completo começando com https://")
+    elif tipo == "video" and link_embed(url) == "":
+        erros.append("Para vídeo, use um link do YouTube ou do Vimeo.")
+    if total["total"] >= LIMITE_PORTFOLIO:
+        erros.append("O portfólio aceita até " + str(LIMITE_PORTFOLIO) + " itens. Remova um para adicionar outro.")
+
+    if len(erros) == 0:
+        db.executar("INSERT INTO portfolio (artista_id, tipo, titulo, url) VALUES (%s, %s, %s, %s)",
+                    (artista["id"], tipo, titulo, url))
+        flash("Item adicionado ao portfólio. Ele já aparece no seu perfil.", "ok")
+    for erro in erros:
+        flash(erro, "erro")
+    return redirect(url_for("artista_painel", aba="portfolio"))
+
+
+@app.route("/artista/portfolio/<item_id>/remover", methods=["POST"])
+@login_obrigatorio
+@artista_obrigatorio
+def remover_portfolio(item_id):
+    artista = artista_logado()
+    if id_valido(item_id):
+        db.executar("DELETE FROM portfolio WHERE id = %s AND artista_id = %s", (item_id, artista["id"]))
+        flash("Item removido do portfólio.", "ok")
+    return redirect(url_for("artista_painel", aba="portfolio"))
 
 
 @app.errorhandler(404)

@@ -1,206 +1,284 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block titulo %}Painel do artista{% endblock %}
 
-{% block conteudo %}
-  <p class="eyebrow eyebrow--accent">Painel do artista · {{ artista.categoria }}</p>
-  <h1 class="title title--md">{{ artista.nome_artistico }}</h1>
-  <p class="lead">Pedidos da sua categoria, propostas enviadas, agenda e avaliações em um só lugar.</p>
+{% block corpo %}
+  <main class="mx-auto max-w-6xl px-5 py-12 md:px-8 md:py-16">
+    <div class="flex flex-wrap items-center gap-5">
+      {{ ui.foto(artista, "size-20 rounded-2xl ring-1 ring-black/10") }}
+      <div>
+        <p class="{{ ui.rotulo }}">Painel do artista · {{ artista.categoria }}</p>
+        <h1 class="mt-2 font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-5xl">{{ artista.nome_artistico }}</h1>
+      </div>
+    </div>
+    <p class="mt-4 max-w-[60ch] text-pretty text-ink-soft">Pedidos da sua categoria, propostas enviadas, agenda e avaliações em um só lugar.</p>
 
-  <div class="kpis">
-    <div class="kpi"><span class="lbl">Pedidos novos</span><strong>{{ pedidos|length }}</strong><span>esperando sua resposta</span></div>
-    <div class="kpi"><span class="lbl">Propostas</span><strong>{{ aguardando }}</strong><span>aguardando o cliente</span></div>
-    <div class="kpi"><span class="lbl">Próximos shows</span><strong>{{ contratos|length }}</strong><span>contratos fechados</span></div>
-    <div class="kpi"><span class="lbl">Nota geral</span><strong>{{ artista.nota_media or "—" }}</strong><span>{{ artista.total_avaliacoes }} avaliações</span></div>
-  </div>
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {{ ui.kpi("Pedidos novos", pedidos|length, "esperando sua resposta") }}
+      {{ ui.kpi("Propostas", aguardando, "aguardando o cliente") }}
+      {{ ui.kpi("Próximos shows", contratos|length, "contratos fechados") }}
+      {{ ui.kpi("Nota geral", artista.nota_media or "—", artista.total_avaliacoes ~ " avaliações") }}
+    </div>
 
-  <nav class="tabs" aria-label="Seções do painel">
-    <a class="tab {% if aba == 'pedidos' %}ativo{% endif %}" href="{{ url_for('artista_painel', aba='pedidos') }}">
-      Pedidos{% if pedidos %}<span class="badge">{{ pedidos|length }}</span>{% endif %}
-    </a>
-    <a class="tab {% if aba == 'propostas' %}ativo{% endif %}" href="{{ url_for('artista_painel', aba='propostas') }}">Minhas propostas</a>
-    <a class="tab {% if aba == 'agenda' %}ativo{% endif %}" href="{{ url_for('artista_painel', aba='agenda') }}">Agenda</a>
-    <a class="tab {% if aba == 'avaliacoes' %}ativo{% endif %}" href="{{ url_for('artista_painel', aba='avaliacoes') }}">Avaliações</a>
-  </nav>
+    <nav aria-label="Seções do painel" class="mt-12 flex flex-wrap gap-2 border-b border-line pb-3">
+      {{ ui.aba("Pedidos", url_for('artista_painel', aba='pedidos'), aba == 'pedidos', pedidos|length) }}
+      {{ ui.aba("Minhas propostas", url_for('artista_painel', aba='propostas'), aba == 'propostas') }}
+      {{ ui.aba("Agenda", url_for('artista_painel', aba='agenda'), aba == 'agenda') }}
+      {{ ui.aba("Avaliações", url_for('artista_painel', aba='avaliacoes'), aba == 'avaliacoes') }}
+      {{ ui.aba("Portfólio", url_for('artista_painel', aba='portfolio'), aba == 'portfolio', portfolio|length) }}
+    </nav>
 
-  {% if aba == 'pedidos' %}
-    <h2 class="section-title">Pedidos de orçamento</h2>
-    {% if pedidos %}
-      <div class="lista">
-        {% for p in pedidos %}
-          <div class="item item--bloco">
-            <div class="item__topo">
-              <div>
-                <h3>{{ p.tipo|tipo_evento }} · {{ p.cliente.split(' ')[0] }}</h3>
-                <p>{{ p.data_evento|data_br }} às {{ p.horario_inicio.strftime('%H:%M') }} · {{ p.duracao_horas|round|int }}h · {{ p.estimativa_convidados }} convidados</p>
-                <p>{{ p.local }}</p>
-                {% if p.observacoes %}<p>“{{ p.observacoes }}”</p>{% endif %}
-              </div>
-              <span class="status">{{ p.status|replace('_', ' ') }}</span>
-            </div>
-            {% if p.conflito %}
-              <p class="alerta">Sua agenda está marcada como ocupada nesse dia. Envie uma contraproposta com outra data.</p>
+    <div class="mt-8">
+      {% if aba == 'pedidos' %}
+        <h2 class="font-display text-2xl uppercase tracking-tight">Pedidos de orçamento</h2>
+        {% if pedidos %}
+          <ul class="mt-4 space-y-4">
+            {% for p in pedidos %}
+              <li class="rounded-2xl border border-line bg-cream p-5 ring-1 ring-black/5">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <p class="font-display text-xl uppercase leading-none tracking-tight">{{ p.tipo|tipo_evento }} · {{ p.cliente.split(' ')[0] }}</p>
+                    <p class="mt-2 text-sm text-ink-soft">{{ p.data_evento|data_br }} às {{ p.horario_inicio.strftime('%H:%M') }} · {{ p.duracao_horas|round|int }}h · {{ p.estimativa_convidados }} convidados</p>
+                    <p class="mt-1 text-xs text-ink-soft">{{ p.local }}</p>
+                    {% if p.observacoes %}<p class="mt-2 text-sm italic text-ink-soft">“{{ p.observacoes }}”</p>{% endif %}
+                  </div>
+                  {{ ui.selo(p.status|replace('_', ' '), 'stage') }}
+                </div>
+
+                {% if p.conflito %}
+                  <p class="mt-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-800">
+                    Sua agenda está marcada como ocupada nesse dia. Envie uma contraproposta com outra data.
+                  </p>
+                {% endif %}
+
+                <div class="mt-5 space-y-4 border-t border-line pt-5">
+                  {% if not p.conflito %}
+                    <form action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post" class="grid items-end gap-4 sm:grid-cols-[1fr_2fr_auto]">
+                      <input type="hidden" name="acao" value="proposta">
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Valor (R$)</span>
+                        <input name="valor" inputmode="decimal" placeholder="a partir de {{ artista.preco_minimo|moeda }}" required class="{{ ui.campo_claro }}">
+                      </label>
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Mensagem</span>
+                        <input name="mensagem" maxlength="500" placeholder="O que está incluso" class="{{ ui.campo_claro }}">
+                      </label>
+                      <button type="submit" class="rounded-full bg-stage px-5 py-3 text-sm font-semibold text-cream transition-colors hover:bg-ink">Enviar proposta</button>
+                    </form>
+                  {% endif %}
+
+                  <details class="group rounded-xl border border-line bg-paper px-4 py-3" {% if p.conflito %}open{% endif %}>
+                    <summary class="cursor-pointer text-sm font-semibold">Propor outra data ou horário</summary>
+                    <form action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post" class="mt-4 grid gap-4 sm:grid-cols-2">
+                      <input type="hidden" name="acao" value="contraproposta">
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Nova data</span>
+                        <input type="date" name="data_sugerida" min="{{ hoje }}" required class="{{ ui.campo_claro }}">
+                      </label>
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Novo horário (opcional)</span>
+                        <input type="time" name="horario_sugerido" class="{{ ui.campo_claro }}">
+                      </label>
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Valor (R$)</span>
+                        <input name="valor" inputmode="decimal" required class="{{ ui.campo_claro }}">
+                      </label>
+                      <label class="block">
+                        <span class="{{ ui.rotulo }}">Mensagem</span>
+                        <input name="mensagem" maxlength="500" placeholder="Por que a outra data" class="{{ ui.campo_claro }}">
+                      </label>
+                      <div class="sm:col-span-2">
+                        <button type="submit" class="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-stage">Enviar contraproposta</button>
+                      </div>
+                    </form>
+                  </details>
+
+                  <form action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post">
+                    <input type="hidden" name="acao" value="recusar">
+                    <button type="submit" class="{{ ui.botao_contorno }}">Recusar pedido</button>
+                  </form>
+                </div>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="mt-4">{{ ui.vazio("Nenhum pedido novo na sua categoria agora.") }}</div>
+        {% endif %}
+
+      {% elif aba == 'propostas' %}
+        <h2 class="font-display text-2xl uppercase tracking-tight">Minhas propostas</h2>
+        {% if propostas %}
+          <div class="mt-4 overflow-hidden rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+            <ul class="divide-y divide-line">
+              {% for pr in propostas %}
+                <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                  <div>
+                    <p class="font-semibold">{{ pr.tipo|tipo_evento }} · {{ pr.cliente.split(' ')[0] }}</p>
+                    <p class="mt-1 text-xs text-ink-soft">{{ (pr.data_sugerida or pr.data_evento)|data_br }}{% if pr.data_sugerida %} (contraproposta; pedido era {{ pr.data_evento|data_br }}){% endif %} · {{ pr.local }}</p>
+                  </div>
+                  <div class="flex items-center gap-4">
+                    {% if pr.valor %}<span class="font-display text-xl tracking-tight">{{ pr.valor|moeda }}</span>{% endif %}
+                    {{ ui.selo(pr.status|status_proposta, 'ok' if pr.status == 'aceita' else ('aviso' if pr.status == 'enviada' else 'neutro')) }}
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% else %}
+          <div class="mt-4">{{ ui.vazio("Você ainda não respondeu nenhum pedido.") }}</div>
+        {% endif %}
+
+      {% elif aba == 'agenda' %}
+        <div class="grid gap-8 md:grid-cols-12">
+          <section class="md:col-span-5">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Marcar data</h2>
+            <form action="{{ url_for('atualizar_agenda') }}" method="post" class="mt-4 space-y-4 rounded-2xl border border-line bg-cream p-6 ring-1 ring-black/5">
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Data</span>
+                <input type="date" name="data" min="{{ hoje }}" required class="{{ ui.campo_claro }}">
+              </label>
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Situação</span>
+                <select name="status" class="{{ ui.campo_claro }}">
+                  <option value="ocupado">Ocupado (não recebo pedidos)</option>
+                  <option value="disponivel">Disponível (quero ser contratado)</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Observação</span>
+                <input name="observacao" maxlength="120" placeholder="Ex.: show em outra cidade" class="{{ ui.campo_claro }}">
+              </label>
+              <button type="submit" class="rounded-full bg-stage px-6 py-3 text-sm font-semibold text-cream transition-colors hover:bg-ink">Salvar na agenda</button>
+            </form>
+          </section>
+
+          <section class="md:col-span-7">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Próximos shows</h2>
+            {% if contratos %}
+              <ul class="mt-4 divide-y divide-line rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+                {% for c in contratos %}
+                  <li class="px-5 py-4">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p class="font-display text-xl uppercase leading-none tracking-tight">{{ c.data_evento|data_br }}</p>
+                        <p class="mt-1 text-xs text-ink-soft">{{ c.tipo|tipo_evento }} · {{ c.cliente }} · {{ c.local }}</p>
+                      </div>
+                      <div class="flex items-center gap-2">
+                        {{ ui.selo(c.status|status_contrato, 'stage' if c.status == 'valor_retido' else 'aviso') }}
+                        <a href="{{ url_for('conversa', contrato_id=c.id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Conversar{% if c.mensagens_novas %}<span class="ml-1.5 rounded-full bg-stage px-1.5 py-0.5 text-[10px] text-cream">{{ c.mensagens_novas }}</span>{% endif %}</a>
+                      </div>
+                    </div>
+                    <details class="mt-3 rounded-xl border border-line bg-paper px-4 py-2">
+                      <summary class="cursor-pointer text-xs font-semibold text-ink-soft">Não vou poder ir — cancelar</summary>
+                      <form action="{{ url_for('artista_cancelar_contrato', contrato_id=c.id) }}" method="post" class="mt-3 space-y-3 pb-2">
+                        <p class="text-xs text-ink-soft">Pela política, o cliente recebe 100% de volta e o cancelamento conta para advertência e suspensão (2 em 12 meses = 30 dias fora da busca).</p>
+                        <input name="motivo" minlength="5" maxlength="300" required placeholder="Motivo que o cliente vai ver" class="{{ ui.campo_claro }}">
+                        <button type="submit" class="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-stage">Cancelar este evento</button>
+                      </form>
+                    </details>
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="mt-4">{{ ui.vazio("Nenhum show marcado.") }}</div>
             {% endif %}
 
-            <div class="resposta">
-              {% if not p.conflito %}
-                <form class="form-grid" action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post">
-                  <input type="hidden" name="acao" value="proposta">
-                  <div class="linha">
-                    <div class="field">
-                      <label class="lbl" for="valor-{{ p.id }}">Valor (R$)</label>
-                      <input class="input" id="valor-{{ p.id }}" name="valor" inputmode="decimal" placeholder="a partir de {{ artista.preco_minimo|moeda }}" required>
+            <h2 class="mt-10 font-display text-2xl uppercase tracking-tight">Datas marcadas</h2>
+            {% if agenda %}
+              <ul class="mt-4 divide-y divide-line rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+                {% for d in agenda %}
+                  <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                    <div>
+                      <p class="font-semibold">{{ d.data|data_br }}</p>
+                      <p class="mt-1 text-xs text-ink-soft">{{ d.observacao or "Sem observação" }}</p>
                     </div>
-                    <div class="field">
-                      <label class="lbl" for="msg-{{ p.id }}">Mensagem</label>
-                      <input class="input" id="msg-{{ p.id }}" name="mensagem" maxlength="500" placeholder="O que está incluso">
+                    <div class="flex items-center gap-3">
+                      {{ ui.selo(d.status, 'stage' if d.status == 'ocupado' else 'ok') }}
+                      <form action="{{ url_for('atualizar_agenda') }}" method="post">
+                        <input type="hidden" name="acao" value="remover">
+                        <input type="hidden" name="data" value="{{ d.data.isoformat() }}">
+                        <button type="submit" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Remover</button>
+                      </form>
                     </div>
-                  </div>
-                  <button class="btn btn--accent btn--small" type="submit">Enviar proposta</button>
-                </form>
-              {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <div class="mt-4">{{ ui.vazio("Nenhuma data marcada. Sem marcação, você aparece como livre para qualquer data.") }}</div>
+            {% endif %}
+          </section>
+        </div>
 
-              <details {% if p.conflito %}open{% endif %}>
-                <summary>Propor outra data ou horário</summary>
-                <form class="form-grid" style="margin-top: 12px" action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post">
-                  <input type="hidden" name="acao" value="contraproposta">
-                  <div class="linha">
-                    <div class="field">
-                      <label class="lbl" for="data-{{ p.id }}">Nova data</label>
-                      <input class="input" type="date" id="data-{{ p.id }}" name="data_sugerida" min="{{ hoje }}" required>
-                    </div>
-                    <div class="field">
-                      <label class="lbl" for="hora-{{ p.id }}">Novo horário (opcional)</label>
-                      <input class="input" type="time" id="hora-{{ p.id }}" name="horario_sugerido">
-                    </div>
-                  </div>
-                  <div class="linha">
-                    <div class="field">
-                      <label class="lbl" for="cvalor-{{ p.id }}">Valor (R$)</label>
-                      <input class="input" id="cvalor-{{ p.id }}" name="valor" inputmode="decimal" required>
-                    </div>
-                    <div class="field">
-                      <label class="lbl" for="cmsg-{{ p.id }}">Mensagem</label>
-                      <input class="input" id="cmsg-{{ p.id }}" name="mensagem" maxlength="500" placeholder="Por que a outra data">
-                    </div>
-                  </div>
-                  <button class="btn btn--dark btn--small" type="submit">Enviar contraproposta</button>
-                </form>
-              </details>
-
-              <form action="{{ url_for('responder_pedido', pedido_id=p.id) }}" method="post">
-                <input type="hidden" name="acao" value="recusar">
-                <button class="btn btn--ghost btn--small" type="submit">Recusar pedido</button>
-              </form>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Nenhum pedido novo na sua categoria agora.</p>
-    {% endif %}
-
-  {% elif aba == 'propostas' %}
-    <h2 class="section-title">Minhas propostas</h2>
-    {% if propostas %}
-      <div class="lista">
-        {% for pr in propostas %}
-          <div class="item">
-            <div>
-              <h3>{{ pr.tipo|tipo_evento }} · {{ pr.cliente.split(' ')[0] }}</h3>
-              <p>{{ (pr.data_sugerida or pr.data_evento)|data_br }}{% if pr.data_sugerida %} (contraproposta; pedido era {{ pr.data_evento|data_br }}){% endif %} · {{ pr.local }}</p>
-            </div>
-            <div class="acoes">
-              {% if pr.valor %}<span class="valor">{{ pr.valor|moeda }}</span>{% endif %}
-              <span class="status {% if pr.status == 'aceita' %}status--liberado{% elif pr.status == 'enviada' %}status--pendente{% endif %}">{{ pr.status|status_proposta }}</span>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Você ainda não respondeu nenhum pedido.</p>
-    {% endif %}
-
-  {% elif aba == 'agenda' %}
-    <div class="duas-colunas">
-      <div>
-        <h2 class="section-title">Marcar data</h2>
-        <form class="card form-grid" action="{{ url_for('atualizar_agenda') }}" method="post">
-          <div class="field">
-            <label class="lbl" for="data">Data</label>
-            <input class="input" type="date" id="data" name="data" min="{{ hoje }}" required>
-          </div>
-          <div class="field">
-            <label class="lbl" for="status">Situação</label>
-            <select class="select" id="status" name="status">
-              <option value="ocupado">Ocupado (não recebo pedidos)</option>
-              <option value="disponivel">Disponível (quero ser contratado)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label class="lbl" for="observacao">Observação</label>
-            <input class="input" id="observacao" name="observacao" maxlength="120" placeholder="Ex.: show em outra cidade">
-          </div>
-          <button class="btn btn--accent" type="submit">Salvar na agenda</button>
-        </form>
-      </div>
-      <div>
-        <h2 class="section-title">Próximos shows</h2>
-        {% if contratos %}
-          <div class="lista">
-            {% for c in contratos %}
-              <div class="item">
-                <div>
-                  <h3>{{ c.data_evento|data_br }}</h3>
-                  <p>{{ c.tipo|tipo_evento }} · {{ c.cliente }} · {{ c.local }}</p>
-                </div>
-                <span class="status">{{ c.status|status_contrato }}</span>
-              </div>
+      {% elif aba == 'avaliacoes' %}
+        <h2 class="font-display text-2xl uppercase tracking-tight">O que os clientes disseram</h2>
+        {% if avaliacoes %}
+          <div class="mt-4 grid gap-4 md:grid-cols-3">
+            {% for av in avaliacoes %}
+              <figure class="flex flex-col rounded-2xl border border-line bg-cream p-6 ring-1 ring-black/5">
+                {{ ui.estrelas(av.nota) }}
+                <blockquote class="mt-3 flex-1 text-pretty text-sm text-ink-soft">“{{ av.comentario or "Sem comentário." }}”</blockquote>
+                <figcaption class="mt-4 border-t border-line pt-3">
+                  <p class="text-sm font-semibold">{{ av.cliente }}</p>
+                  <p class="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">{{ av.criado_em|data_br }}</p>
+                </figcaption>
+              </figure>
             {% endfor %}
           </div>
         {% else %}
-          <p class="vazio">Nenhum show marcado.</p>
+          <div class="mt-4">{{ ui.vazio("Você ainda não recebeu avaliações.") }}</div>
         {% endif %}
-      </div>
+
+      {% elif aba == 'portfolio' %}
+        <div class="grid gap-8 md:grid-cols-12">
+          <section class="md:col-span-5">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Adicionar ao portfólio</h2>
+            <form action="{{ url_for('adicionar_portfolio') }}" method="post" class="mt-4 space-y-4 rounded-2xl border border-line bg-cream p-6 ring-1 ring-black/5">
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Tipo</span>
+                <select name="tipo" class="{{ ui.campo_claro }}">
+                  <option value="foto">Foto (link da imagem)</option>
+                  <option value="video">Vídeo (YouTube ou Vimeo)</option>
+                  <option value="audio">Áudio (Spotify, SoundCloud...)</option>
+                </select>
+              </label>
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Título</span>
+                <input name="titulo" minlength="3" maxlength="80" required placeholder="Ex.: Set no Casamento da Ana" class="{{ ui.campo_claro }}">
+              </label>
+              <label class="block">
+                <span class="{{ ui.rotulo }}">Link</span>
+                <input name="url" type="url" required placeholder="https://" class="{{ ui.campo_claro }}">
+              </label>
+              <button type="submit" class="rounded-full bg-stage px-6 py-3 text-sm font-semibold text-cream transition-colors hover:bg-ink">Adicionar</button>
+              <p class="text-xs text-ink-soft">{{ portfolio|length }} de {{ limite_portfolio }} itens. O link precisa ser público e começar com https://</p>
+            </form>
+          </section>
+          <section class="md:col-span-7">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Seu portfólio</h2>
+            {% if portfolio %}
+              <ul class="mt-4 divide-y divide-line rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+                {% for item in portfolio %}
+                  <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                    <div class="flex min-w-0 items-center gap-3">
+                      {{ ui.selo(item.tipo, 'stage' if item.tipo == 'video' else ('ink' if item.tipo == 'audio' else 'neutro')) }}
+                      <div class="min-w-0">
+                        <p class="truncate font-semibold">{{ item.titulo }}</p>
+                        <a href="{{ item.url }}" target="_blank" rel="noopener noreferrer" class="block max-w-[28ch] truncate text-xs text-ink-soft hover:text-stage">{{ item.url }}</a>
+                      </div>
+                    </div>
+                    <form action="{{ url_for('remover_portfolio', item_id=item.id) }}" method="post">
+                      <button type="submit" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Remover</button>
+                    </form>
+                  </li>
+                {% endfor %}
+              </ul>
+              <a href="{{ url_for('artista_detalhe', artista_id=artista.id) }}" class="mt-4 inline-block text-sm font-semibold text-stage hover:text-ink">Ver como os clientes enxergam →</a>
+            {% else %}
+              <div class="mt-4">{{ ui.vazio("Seu portfólio está vazio. Perfis com fotos e vídeos recebem mais pedidos.") }}</div>
+            {% endif %}
+          </section>
+        </div>
+      {% endif %}
     </div>
-
-    <h2 class="section-title">Datas marcadas</h2>
-    {% if agenda %}
-      <div class="lista">
-        {% for d in agenda %}
-          <div class="item">
-            <div>
-              <h3>{{ d.data|data_br }}</h3>
-              <p>{{ d.observacao or "Sem observação" }}</p>
-            </div>
-            <div class="acoes">
-              <span class="status {% if d.status == 'ocupado' %}status--retido{% else %}status--liberado{% endif %}">{{ d.status }}</span>
-              <form action="{{ url_for('atualizar_agenda') }}" method="post">
-                <input type="hidden" name="acao" value="remover">
-                <input type="hidden" name="data" value="{{ d.data.isoformat() }}">
-                <button class="btn btn--ghost btn--small" type="submit">Remover</button>
-              </form>
-            </div>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Nenhuma data marcada. Sem marcação, você aparece como livre para qualquer data.</p>
-    {% endif %}
-
-  {% elif aba == 'avaliacoes' %}
-    <h2 class="section-title">O que os clientes disseram</h2>
-    {% if avaliacoes %}
-      <div class="depoimentos">
-        {% for av in avaliacoes %}
-          <blockquote class="depoimento">
-            <span class="estrelas" aria-label="Nota {{ av.nota }} de 5">{% for i in range(av.nota) %}★{% endfor %}</span>
-            <p>“{{ av.comentario or "Sem comentário." }}”</p>
-            <footer>{{ av.cliente }} · {{ av.criado_em|data_br }}</footer>
-          </blockquote>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Você ainda não recebeu avaliações.</p>
-    {% endif %}
-  {% endif %}
+  </main>
 {% endblock %}
