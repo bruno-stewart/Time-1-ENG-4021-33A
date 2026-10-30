@@ -1,31 +1,94 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block titulo %}{{ artista.nome_artistico }}{% endblock %}
+{% block descricao %}{{ artista.nome_artistico }}, {{ artista.categoria }} em {{ artista.cidade }}. Cachê, descrição e avaliações de clientes.{% endblock %}
 
-{% block conteudo %}
-  <p class="eyebrow eyebrow--accent">{{ artista.categoria }}{% if artista.estilo %} · {{ artista.estilo }}{% endif %}</p>
-  <h1 class="title">{{ artista.nome_artistico }}</h1>
-  <p class="lead">{{ artista.descricao or "Este artista ainda não escreveu uma descrição." }}</p>
-
-  <div class="kpis">
-    <div class="kpi"><span class="lbl">Cidade</span><strong>{{ artista.cidade }}</strong></div>
-    <div class="kpi"><span class="lbl">A partir de</span><strong>{{ artista.preco_minimo|moeda }}</strong></div>
-    <div class="kpi"><span class="lbl">Nota geral</span><strong>{{ artista.nota_media or "—" }}</strong><span>{{ artista.total_avaliacoes }} avaliações</span></div>
-  </div>
-
-  <a class="btn btn--accent" href="{{ url_for('orcamento', categoria=artista.categoria_id) }}">Pedir orçamento</a>
-
-  <h2 class="section-title" style="margin-top: 48px">Depoimentos</h2>
-  {% if avaliacoes %}
-    <div class="depoimentos">
-      {% for av in avaliacoes %}
-        <blockquote class="depoimento">
-          <span class="estrelas" aria-label="Nota {{ av.nota }} de 5">{% for i in range(av.nota) %}★{% endfor %}</span>
-          <p>“{{ av.comentario or "Sem comentário." }}”</p>
-          <footer>{{ av.cliente }} · {{ av.criado_em|data_br }}</footer>
-        </blockquote>
-      {% endfor %}
+{% block corpo %}
+  {# ---------- Capa / identidade ---------- #}
+  <section class="border-b border-line bg-ink text-cream">
+    <div class="mx-auto grid max-w-6xl gap-8 px-5 py-14 md:grid-cols-12 md:px-8 md:py-20">
+      <div class="md:col-span-5">
+        {{ ui.foto(artista, "aspect-[4/3] w-full rounded-2xl ring-1 ring-white/10") }}
+      </div>
+      <div class="flex flex-col justify-center md:col-span-7">
+        <p class="font-mono text-xs uppercase tracking-[0.2em] text-stage">
+          {{ artista.categoria }}{% if artista.estilo %} · {{ artista.estilo }}{% endif %} · {{ artista.cidade }}
+        </p>
+        <h1 class="mt-3 font-display text-5xl uppercase leading-[0.95] tracking-tight sm:text-6xl">{{ artista.nome_artistico }}</h1>
+        <div class="mt-4 flex items-center gap-3">
+          {% if artista.nota_media %}
+            {{ ui.estrelas(artista.nota_media, "text-lg") }}
+            <span class="font-medium">{{ artista.nota_media }} · {{ artista.total_avaliacoes }} avaliação{% if artista.total_avaliacoes != 1 %}ões{% endif %}</span>
+          {% else %}
+            {{ ui.estrelas(0, "text-lg") }}
+            <span class="font-medium text-cream/70">Novo na plataforma</span>
+          {% endif %}
+        </div>
+        <p class="mt-5 max-w-[56ch] text-pretty text-cream/80">{{ artista.descricao or "Este artista ainda não escreveu uma descrição." }}</p>
+        <p class="mt-6 text-sm text-cream/60">
+          Cachê a partir de <span class="font-semibold text-cream">{{ artista.preco_minimo|moeda }}</span>
+        </p>
+      </div>
     </div>
-  {% else %}
-    <p class="vazio">Ainda não há avaliações para este artista.</p>
-  {% endif %}
+  </section>
+
+  {# ---------- Como contratar ---------- #}
+  <section class="border-b border-line bg-cream">
+    <div class="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
+      <p class="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">(a) Contratação</p>
+      <h2 class="font-display text-4xl uppercase tracking-tight">Como funciona com {{ artista.nome_artistico }}</h2>
+      <ul class="mt-8 divide-y divide-line rounded-2xl border border-line bg-paper ring-1 ring-black/5">
+        {% for item, valor in [
+          ("Cachê inicial", artista.preco_minimo|moeda),
+          ("Categoria", artista.categoria),
+          ("Cidade de atuação", artista.cidade),
+          ("Pagamento", "retido até o evento"),
+        ] %}
+          <li class="flex items-baseline justify-between gap-4 px-5 py-4 sm:px-7">
+            <span class="text-sm font-medium sm:text-base">{{ item }}</span>
+            <span class="hidden flex-1 border-b border-dashed border-line sm:block" aria-hidden="true"></span>
+            <span class="shrink-0 font-display text-xl tracking-tight">{{ valor }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="mt-3 text-xs text-ink-soft">Valores estimados — o orçamento final depende de data, duração e deslocamento.</p>
+    </div>
+  </section>
+
+  {# ---------- Avaliações ---------- #}
+  <section class="mx-auto max-w-6xl px-5 py-14 md:px-8 md:py-20">
+    <p class="mb-2 font-mono text-xs uppercase tracking-[0.2em] text-ink-soft">(b) Avaliações</p>
+    <h2 class="font-display text-4xl uppercase tracking-tight">O que dizem os clientes</h2>
+    {% if avaliacoes %}
+      <div class="mt-8 grid gap-4 md:grid-cols-3">
+        {% for av in avaliacoes %}
+          <figure class="flex flex-col rounded-2xl border border-line bg-cream p-6 ring-1 ring-black/5">
+            {{ ui.estrelas(av.nota) }}
+            <blockquote class="mt-3 flex-1 text-pretty text-sm text-ink-soft">“{{ av.comentario or "Sem comentário." }}”</blockquote>
+            <figcaption class="mt-4 border-t border-line pt-3">
+              <p class="text-sm font-semibold">{{ av.cliente }}</p>
+              <p class="font-mono text-[11px] uppercase tracking-[0.12em] text-ink-soft">{{ av.criado_em|data_br }}</p>
+            </figcaption>
+          </figure>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="mt-8">{{ ui.vazio("Ainda não há avaliações para este artista.") }}</div>
+    {% endif %}
+  </section>
+
+  {# ---------- Barra fixa de contratação ---------- #}
+  <div class="sticky bottom-0 z-20 border-t border-line bg-paper/95 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3 md:px-8">
+      <div class="flex items-center gap-3">
+        {{ ui.foto(artista, "size-10 rounded-full ring-1 ring-black/10") }}
+        <div>
+          <p class="text-sm font-semibold leading-tight">{{ artista.nome_artistico }}</p>
+          <p class="text-xs text-ink-soft">a partir de {{ artista.preco_minimo|moeda }}</p>
+        </div>
+      </div>
+      <a href="{{ url_for('orcamento', categoria=artista.categoria_id) }}"
+         class="rounded-full bg-stage px-6 py-2.5 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-ink">Solicitar orçamento</a>
+    </div>
+  </div>
 {% endblock %}

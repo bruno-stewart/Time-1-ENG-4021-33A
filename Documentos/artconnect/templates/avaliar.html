@@ -1,28 +1,60 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block titulo %}Avaliar artista{% endblock %}
-{% block largura %}narrow{% endblock %}
 
-{% block conteudo %}
-  <p class="eyebrow eyebrow--accent">Avaliação</p>
-  <h1 class="title title--md">Como foi com<br>{{ contrato.nome_artistico }}?</h1>
-  <p class="lead">{{ contrato.data_evento|data_br }} · {{ contrato.local }}. Sua nota aparece no perfil do artista e ajuda outros clientes.</p>
+{% block corpo %}
+  <main class="mx-auto max-w-3xl px-5 py-14 md:px-8 md:py-20">
+    <p class="{{ ui.rotulo }}">Avaliação e feedback</p>
+    <h1 class="mt-3 font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-5xl">Como foi com {{ contrato.nome_artistico }}?</h1>
+    <p class="mt-4 max-w-[60ch] text-pretty text-ink-soft">
+      Dê uma nota e escreva um depoimento. Sua avaliação fica visível no perfil do artista e ajuda outros clientes a escolher com segurança.
+    </p>
 
-  <form class="card form-grid" action="{{ url_for('avaliar_contrato', contrato_id=contrato.id) }}" method="post">
-    <fieldset>
-      <legend class="lbl">Nota</legend>
-      <div class="notas">
-        {% for n in ['1', '2', '3', '4', '5'] %}
-          <label>
-            <input type="radio" name="nota" value="{{ n }}" {% if form.get('nota') == n %}checked{% endif %} required>
-            <span>{{ n }}★</span>
-          </label>
-        {% endfor %}
+    <form action="{{ url_for('avaliar_contrato', contrato_id=contrato.id) }}" method="post"
+          class="mt-10 space-y-8 rounded-2xl border border-line bg-cream p-6 ring-1 ring-black/5 md:p-8">
+      <div class="flex items-center gap-4 border-b border-line pb-6">
+        {{ ui.foto(contrato, "size-16 rounded-lg") }}
+        <div>
+          <p class="font-display text-xl uppercase leading-none tracking-tight">{{ contrato.nome_artistico }}</p>
+          <p class="mt-1 text-xs text-ink-soft">{{ contrato.data_evento|data_br }} · {{ contrato.local }}</p>
+        </div>
       </div>
-    </fieldset>
-    <div class="field">
-      <label class="lbl" for="comentario">Comentário (opcional)</label>
-      <textarea class="textarea" id="comentario" name="comentario" maxlength="500" placeholder="Pontualidade, qualidade, o que o público achou…">{{ form.get('comentario', '') }}</textarea>
-    </div>
-    <button class="btn btn--accent btn--block" type="submit">Enviar avaliação</button>
-  </form>
+
+      <fieldset class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-paper px-4 py-3">
+        <div>
+          <legend class="text-sm font-semibold">Nota geral</legend>
+          <p class="text-xs text-ink-soft">Pontualidade, qualidade técnica e simpatia.</p>
+        </div>
+        <div class="estrelas-input">
+          {% for n in ['5', '4', '3', '2', '1'] %}
+            <input type="radio" id="nota-{{ n }}" name="nota" value="{{ n }}" {% if form.get('nota') == n %}checked{% endif %} required>
+            <label for="nota-{{ n }}" aria-label="{{ n }} estrela{% if n != '1' %}s{% endif %}">★</label>
+          {% endfor %}
+        </div>
+      </fieldset>
+
+      <label class="block">
+        <span class="{{ ui.rotulo }}">Depoimento público (opcional)</span>
+        <textarea id="comentario" name="comentario" rows="6" maxlength="500"
+                  placeholder="Conte como foi a apresentação, o que surpreendeu e o que poderia melhorar."
+                  class="{{ ui.campo_claro }}">{{ form.get('comentario', '') }}</textarea>
+        <span class="mt-1 block text-right font-mono text-[11px] text-ink-soft"><span id="contador">{{ form.get('comentario', '')|length }}</span>/500</span>
+      </label>
+
+      <div class="flex flex-wrap items-center justify-between gap-4 border-t border-line pt-6">
+        <a href="{{ url_for('painel', aba='historico') }}" class="text-sm font-medium text-ink-soft hover:text-ink">← Voltar ao painel</a>
+        <button type="submit" class="rounded-full bg-stage px-6 py-3 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-ink">Publicar avaliação</button>
+      </div>
+    </form>
+  </main>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  var comentario = document.getElementById("comentario");
+  var contador = document.getElementById("contador");
+  comentario.addEventListener("input", function () {
+    contador.textContent = comentario.value.length;
+  });
+</script>
 {% endblock %}

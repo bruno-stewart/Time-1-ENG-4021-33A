@@ -4,56 +4,81 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block titulo %}ArtConnect{% endblock %} · ArtConnect</title>
+  <meta name="description" content="{% block descricao %}Encontre e contrate artistas locais para o seu evento com score de compatibilidade.{% endblock %}">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
-<body>
+<body class="min-h-screen bg-paper font-body text-ink antialiased">
 
-  <header class="header">
-    <a class="logo" href="{{ url_for('index') }}">ArtConnect</a>
-    <nav class="nav" aria-label="Navegação principal">
-      <a class="link" href="{{ url_for('index') }}">Artistas</a>
-      {% if usuario_nome %}
-        {% if usuario_papel == 'artista' %}
-          <a class="link" href="{{ url_for('artista_painel') }}">Meu painel</a>
-        {% elif usuario_papel == 'admin' %}
-          <a class="link" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
-          <a class="link" href="{{ url_for('listar_usuarios') }}">Usuários</a>
+  <header class="sticky top-0 z-20 border-b border-line bg-paper/90 backdrop-blur">
+    <div class="mx-auto flex min-h-16 max-w-6xl flex-wrap items-center justify-between gap-3 px-5 py-3 md:px-8">
+      <a href="{{ url_for('index') }}" class="flex items-center gap-2">
+        <span class="size-3 rounded-full bg-stage"></span>
+        <span class="font-display text-2xl leading-none tracking-tight">ArtConnect</span>
+      </a>
+
+      <nav aria-label="Navegação principal" class="order-3 flex w-full flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm font-medium lg:order-none lg:w-auto">
+        <a href="{{ url_for('index') }}" class="text-ink-soft transition-colors hover:text-ink">Início</a>
+        <a href="{{ url_for('index') }}#artistas" class="text-ink-soft transition-colors hover:text-ink">Artistas</a>
+        {% if usuario_nome %}
+          {% if usuario_papel == 'artista' %}
+            <a href="{{ url_for('artista_painel') }}" class="text-ink-soft transition-colors hover:text-ink">Meu painel</a>
+          {% elif usuario_papel == 'admin' %}
+            <a href="{{ url_for('admin_dashboard') }}" class="text-ink-soft transition-colors hover:text-ink">Dashboard</a>
+            <a href="{{ url_for('listar_usuarios') }}" class="text-ink-soft transition-colors hover:text-ink">Usuários</a>
+          {% else %}
+            <a href="{{ url_for('orcamento') }}" class="text-ink-soft transition-colors hover:text-ink">Orçamento</a>
+            <a href="{{ url_for('painel') }}" class="text-ink-soft transition-colors hover:text-ink">Meu painel</a>
+          {% endif %}
+          <a href="{{ url_for('editar_perfil') }}" class="text-ink-soft transition-colors hover:text-ink">Perfil</a>
+          <a href="{{ url_for('logout') }}" class="text-ink-soft transition-colors hover:text-ink">Sair</a>
         {% else %}
-          <a class="link" href="{{ url_for('painel') }}">Meu painel</a>
+          <a href="{{ url_for('login') }}" class="text-ink-soft transition-colors hover:text-ink">Entrar</a>
+          <a href="{{ url_for('cadastro', tipo='artista') }}" class="font-semibold text-stage transition-colors hover:text-ink">Sou artista</a>
         {% endif %}
-        <a class="link" href="{{ url_for('editar_perfil') }}">Perfil</a>
-        <a class="link" href="{{ url_for('logout') }}">Sair</a>
-        {% if usuario_papel == 'cliente' %}
-          <a class="btn btn--dark" href="{{ url_for('orcamento') }}">Pedir orçamento</a>
-        {% endif %}
+      </nav>
+
+      {% if usuario_papel == 'artista' %}
+        <a href="{{ url_for('artista_painel', aba='pedidos') }}" class="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-stage">Ver pedidos</a>
+      {% elif usuario_papel == 'admin' %}
+        <a href="{{ url_for('admin_dashboard') }}" class="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-stage">Dashboard</a>
+      {% elif usuario_nome %}
+        <a href="{{ url_for('orcamento') }}" class="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-stage">Pedir orçamento</a>
       {% else %}
-        <a class="link" href="{{ url_for('login') }}">Entrar</a>
-        <a class="btn btn--dark" href="{{ url_for('cadastro') }}">Criar conta</a>
+        <a href="{{ url_for('cadastro') }}" class="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-cream ring-1 ring-black/5 transition-colors hover:bg-stage">Criar conta</a>
       {% endif %}
-    </nav>
+    </div>
   </header>
 
-  <main class="main {% block main_class %}{% endblock %}">
-    <div class="{% block largura %}container{% endblock %}">
-      {% with mensagens = get_flashed_messages(with_categories=true) %}
-        {% if mensagens %}
-          <ul class="flashes" role="status">
-            {% for categoria, texto in mensagens %}
-              <li class="flash flash--{{ categoria }}">{{ texto }}</li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      {% endwith %}
+  {% with mensagens = get_flashed_messages(with_categories=true) %}
+    {% if mensagens %}
+      <div class="mx-auto max-w-6xl px-5 pt-6 md:px-8">
+        <ul class="space-y-2" role="status">
+          {% for categoria, texto in mensagens %}
+            <li class="rounded-2xl border px-5 py-3 text-sm font-medium ring-1 ring-black/5 {% if categoria == 'erro' %}border-stage/40 bg-stage/10 text-stage-deep{% else %}border-ok/30 bg-ok/10 text-ok{% endif %}">{{ texto }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  {% endwith %}
 
-      {% block conteudo %}{% endblock %}
+  {% block corpo %}{% endblock %}
+
+  <footer class="border-t border-line">
+    <div class="mx-auto flex max-w-6xl flex-col items-start justify-between gap-4 px-5 py-10 sm:flex-row sm:items-center md:px-8">
+      <div class="flex items-center gap-2">
+        <span class="size-3 rounded-full bg-stage"></span>
+        <span class="font-display text-xl tracking-tight">ArtConnect</span>
+      </div>
+      <nav aria-label="Rodapé" class="flex flex-wrap gap-x-5 gap-y-2 text-sm text-ink-soft">
+        <a href="{{ url_for('cadastro', tipo='artista') }}" class="hover:text-stage">Seja um artista</a>
+        <a href="{{ url_for('orcamento') }}" class="hover:text-stage">Pedir orçamento</a>
+        <a href="{{ url_for('index') }}#artistas" class="hover:text-stage">Explorar artistas</a>
+      </nav>
+      <p class="font-mono text-xs text-ink-soft">© 2026 ArtConnect · Feito para artistas locais no Brasil</p>
     </div>
-  </main>
-
-  <footer class="footer">
-    © 2026 ArtConnect · Feito para artistas locais no Brasil
   </footer>
 
   {% block scripts %}{% endblock %}

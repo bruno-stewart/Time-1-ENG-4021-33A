@@ -1,140 +1,216 @@
 {% extends "base.html" %}
+{% import "_ui.html" as ui %}
 {% block titulo %}Meu painel{% endblock %}
+{% block descricao %}Próximos eventos, histórico de serviços, status dos pagamentos, pedidos de orçamento e mensagens com os artistas.{% endblock %}
 
-{% block conteudo %}
-  <p class="eyebrow">Painel do cliente</p>
-  <h1 class="title title--md">Olá, {{ usuario_nome.split(' ')[0] }}</h1>
-  <p class="lead">Seus eventos, contratos e pagamentos em um só lugar.</p>
+{% macro tom_contrato(status) -%}
+  {%- if status == 'valor_retido' -%}stage{%- elif status == 'concluido' -%}ink{%- elif status in ['aguardando_pagamento', 'pendente'] -%}aviso{%- else -%}neutro{%- endif -%}
+{%- endmacro %}
 
-  <div class="kpis">
-    <div class="kpi"><span class="lbl">Próximos eventos</span><strong>{{ indicadores.proximos_eventos }}</strong><span>agendados e confirmados</span></div>
-    <div class="kpi"><span class="lbl">Valor retido</span><strong>{{ indicadores.valor_retido|moeda }}</strong><span>liberado após cada evento</span></div>
-    <div class="kpi"><span class="lbl">Total contratado</span><strong>{{ indicadores.total_contratado|moeda }}</strong><span>em todos os contratos</span></div>
-    <div class="kpi"><span class="lbl">Mensagens novas</span><strong>{{ indicadores.mensagens_novas }}</strong><span>de artistas contratados</span></div>
-  </div>
-
-  <nav class="tabs" aria-label="Seções do painel">
-    <a class="tab {% if aba == 'historico' %}ativo{% endif %}" href="{{ url_for('painel', aba='historico') }}">Histórico</a>
-    <a class="tab {% if aba == 'pagamentos' %}ativo{% endif %}" href="{{ url_for('painel', aba='pagamentos') }}">Pagamentos</a>
-    <a class="tab {% if aba == 'pedidos' %}ativo{% endif %}" href="{{ url_for('painel', aba='pedidos') }}">Pedidos de orçamento</a>
-    <a class="tab {% if aba == 'mensagens' %}ativo{% endif %}" href="{{ url_for('painel', aba='mensagens') }}">
-      Mensagens{% if indicadores.mensagens_novas > 0 %}<span class="badge">{{ indicadores.mensagens_novas }}</span>{% endif %}
-    </a>
-  </nav>
-
-  {% if aba == 'historico' %}
-    <h2 class="section-title">Serviços contratados</h2>
-    {% if contratos %}
-      <div class="lista">
-        {% for c in contratos %}
-          <div class="item">
-            <div>
-              <h3>{{ c.nome_artistico }}</h3>
-              <p>{{ c.descricao or c.estilo }} · {{ c.tipo|tipo_evento }}</p>
-              <p>{{ c.data_evento|data_br }} · {{ c.local }}</p>
-              <p><span class="status">{{ c.status|status_contrato }}</span>
-                {% if c.minha_nota %} <span class="estrelas" aria-label="Sua nota: {{ c.minha_nota }} de 5">{% for i in range(c.minha_nota) %}★{% endfor %}</span>{% endif %}</p>
-            </div>
-            <div class="acoes">
-              <span class="valor">{{ c.valor_total|moeda }}</span>
-              {% if c.status == 'valor_retido' and c.ja_aconteceu %}
-                <form action="{{ url_for('confirmar_evento', contrato_id=c.id) }}" method="post">
-                  <button class="btn btn--dark btn--small" type="submit">Confirmar que o evento aconteceu</button>
-                </form>
-              {% elif c.status == 'concluido' and not c.avaliacao_id %}
-                <a class="btn btn--accent btn--small" href="{{ url_for('avaliar_contrato', contrato_id=c.id) }}">Avaliar artista</a>
-              {% endif %}
-            </div>
-          </div>
-        {% endfor %}
+{% macro cartao_contrato(c) %}
+  <li class="flex flex-wrap items-center gap-4 rounded-2xl border border-line bg-cream p-4 ring-1 ring-black/5">
+    {{ ui.foto(c, "size-16 rounded-lg") }}
+    <div class="min-w-[12rem] flex-1">
+      <div class="flex flex-wrap items-center gap-2">
+        <p class="font-display text-xl uppercase leading-none tracking-tight">{{ c.nome_artistico }}</p>
+        {{ ui.selo(c.status|status_contrato, tom_contrato(c.status)) }}
+        {% if c.minha_nota %}{{ ui.estrelas(c.minha_nota, "text-sm") }}{% endif %}
       </div>
-    {% else %}
-      <p class="vazio">Você ainda não contratou nenhum artista.</p>
-    {% endif %}
+      <p class="mt-2 text-sm text-ink-soft">{{ c.descricao or c.estilo }} · {{ c.tipo|tipo_evento }}</p>
+      <p class="mt-1 text-xs text-ink-soft">{{ c.data_evento|data_br }} · {{ c.local }}</p>
+    </div>
+    <div class="flex flex-col items-end gap-2">
+      <span class="font-display text-2xl tracking-tight">{{ c.valor_total|moeda }}</span>
+      {% if c.status == 'valor_retido' and c.ja_aconteceu %}
+        <form action="{{ url_for('confirmar_evento', contrato_id=c.id) }}" method="post">
+          <button type="submit" class="rounded-full bg-ink px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-stage">Confirmar que o evento aconteceu</button>
+        </form>
+      {% elif c.status == 'concluido' and not c.avaliacao_id %}
+        <a href="{{ url_for('avaliar_contrato', contrato_id=c.id) }}" class="rounded-full bg-stage px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-ink">Avaliar artista</a>
+      {% else %}
+        <a href="{{ url_for('artista_detalhe', artista_id=c.artista_id) }}" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-paper">Ver artista</a>
+      {% endif %}
+    </div>
+  </li>
+{% endmacro %}
 
-  {% elif aba == 'pagamentos' %}
-    <h2 class="section-title">Status dos pagamentos</h2>
-    {% if contratos %}
-      <div class="lista">
-        {% for c in contratos %}
-          <div class="item">
-            <div>
-              <h3>{{ c.nome_artistico }}</h3>
-              <p>{{ c.tipo|tipo_evento }} · {{ c.data_evento|data_br }}</p>
-            </div>
-            <div style="display: flex; align-items: center; gap: 14px">
-              <span class="valor">{{ c.valor_total|moeda }}</span>
-              <span class="status status--{{ c.status_pagamento }}">{{ c.status_pagamento|status_pagamento }}</span>
-            </div>
+{% block corpo %}
+  <main class="mx-auto max-w-6xl px-5 py-12 md:px-8 md:py-16">
+    <p class="{{ ui.rotulo }}">Painel do cliente</p>
+    <h1 class="mt-3 font-display text-4xl uppercase leading-[0.95] tracking-tight sm:text-5xl">Olá, {{ usuario_nome.split(' ')[0] }}</h1>
+    <p class="mt-3 max-w-[60ch] text-pretty text-ink-soft">Seus eventos, contratos e pagamentos em um só lugar.</p>
+
+    {# Indicadores #}
+    <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {{ ui.kpi("Próximos eventos", indicadores.proximos_eventos, "agendados e confirmados") }}
+      {{ ui.kpi("Valor retido", indicadores.valor_retido|moeda, "liberado após cada evento") }}
+      {{ ui.kpi("Total contratado", indicadores.total_contratado|moeda, "em todos os contratos") }}
+      {{ ui.kpi("Mensagens novas", indicadores.mensagens_novas, "de artistas contratados") }}
+    </div>
+
+    {# Abas #}
+    <nav aria-label="Seções do painel" class="mt-12 flex flex-wrap gap-2 border-b border-line pb-3">
+      {{ ui.aba("Visão geral", url_for('painel', aba='visao'), aba == 'visao') }}
+      {{ ui.aba("Histórico", url_for('painel', aba='historico'), aba == 'historico') }}
+      {{ ui.aba("Pagamentos", url_for('painel', aba='pagamentos'), aba == 'pagamentos') }}
+      {{ ui.aba("Pedidos de orçamento", url_for('painel', aba='pedidos'), aba == 'pedidos') }}
+      {{ ui.aba("Mensagens", url_for('painel', aba='mensagens'), aba == 'mensagens', indicadores.mensagens_novas) }}
+    </nav>
+
+    <div class="mt-8">
+      {% if aba == 'visao' %}
+        {% set proximos = contratos|rejectattr('ja_aconteceu')|list %}
+        <section class="grid gap-8 md:grid-cols-12">
+          <div class="md:col-span-8">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Próximos eventos</h2>
+            {% if proximos %}
+              <ul class="mt-4 space-y-3">
+                {% for c in proximos|sort(attribute='data_evento') %}{{ cartao_contrato(c) }}{% endfor %}
+              </ul>
+            {% else %}
+              <div class="mt-4">{{ ui.vazio("Nenhum evento marcado. Que tal pedir um orçamento?") }}</div>
+            {% endif %}
           </div>
-        {% endfor %}
-      </div>
-      <p class="hint" style="margin-top: 16px">Os valores retidos são liberados ao artista após você confirmar a apresentação.</p>
-    {% else %}
-      <p class="vazio">Nenhum pagamento registrado.</p>
-    {% endif %}
-
-  {% elif aba == 'pedidos' %}
-    <h2 class="section-title">Pedidos de orçamento</h2>
-    {% if pedidos %}
-      <div class="lista">
-        {% for p in pedidos %}
-          <div class="item item--bloco">
-            <div class="item__topo">
-              <div>
-                <h3>{{ p.categoria }}</h3>
-                <p>{{ p.tipo|tipo_evento }} · {{ p.data_evento|data_br }} às {{ p.horario_inicio.strftime('%H:%M') }} · {{ p.estimativa_convidados }} convidados</p>
-                <p>{{ p.local }}</p>
-              </div>
-              <span class="status">{{ p.status|replace('_', ' ') }}</span>
+          <aside class="md:col-span-4">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Atalhos</h2>
+            <div class="mt-4 space-y-3">
+              <a href="{{ url_for('orcamento') }}" class="block rounded-2xl bg-ink p-5 text-cream ring-1 ring-black/5 transition-colors hover:bg-stage">
+                <p class="font-semibold">Pedir novo orçamento</p>
+                <p class="mt-1 text-xs text-cream/70">Receba propostas de artistas da sua região</p>
+              </a>
+              <a href="{{ url_for('painel', aba='pedidos') }}" class="block rounded-2xl border border-line bg-cream p-5 ring-1 ring-black/5 transition-colors hover:bg-paper">
+                <p class="font-semibold">Ver propostas recebidas</p>
+                <p class="mt-1 text-xs text-ink-soft">{{ pedidos|length }} pedido{% if pedidos|length != 1 %}s{% endif %} de orçamento</p>
+              </a>
+              <a href="{{ url_for('painel', aba='mensagens') }}" class="block rounded-2xl border border-line bg-cream p-5 ring-1 ring-black/5 transition-colors hover:bg-paper">
+                <p class="font-semibold">Falar com os artistas</p>
+                <p class="mt-1 text-xs text-ink-soft">{{ indicadores.mensagens_novas }} mensagens não lidas</p>
+              </a>
             </div>
-            {% set ns = namespace(tem=false) %}
-            {% for pr in propostas if pr.pedido_id == p.id %}
-              {% set ns.tem = true %}
-              <div class="proposta">
-                <div>
-                  <strong><a href="{{ url_for('artista_detalhe', artista_id=pr.artista_id) }}">{{ pr.nome_artistico }}</a></strong>
-                  · {{ pr.valor|moeda }}
-                  {% if pr.data_sugerida %}<span class="status status--pendente">sugere {{ pr.data_sugerida|data_br }}{% if pr.horario_sugerido %} às {{ pr.horario_sugerido.strftime('%H:%M') }}{% endif %}</span>{% endif %}
-                  {% if pr.mensagem %}<p>“{{ pr.mensagem }}”</p>{% endif %}
-                </div>
-                {% if pr.status == 'enviada' and p.status in ['aberto', 'com_propostas'] %}
-                  <div class="acoes">
-                    <form action="{{ url_for('recusar_proposta', proposta_id=pr.id) }}" method="post">
-                      <button class="btn btn--ghost btn--small" type="submit">Recusar</button>
-                    </form>
-                    <form action="{{ url_for('aceitar_proposta', proposta_id=pr.id) }}" method="post">
-                      <button class="btn btn--accent btn--small" type="submit">Aceitar</button>
-                    </form>
+          </aside>
+        </section>
+
+      {% elif aba == 'historico' %}
+        <section>
+          <h2 class="font-display text-2xl uppercase tracking-tight">Serviços contratados</h2>
+          {% if contratos %}
+            <ul class="mt-4 space-y-3">
+              {% for c in contratos %}{{ cartao_contrato(c) }}{% endfor %}
+            </ul>
+          {% else %}
+            <div class="mt-4">{{ ui.vazio("Você ainda não contratou nenhum artista.") }}</div>
+          {% endif %}
+        </section>
+
+      {% elif aba == 'pagamentos' %}
+        <section>
+          <h2 class="font-display text-2xl uppercase tracking-tight">Status dos pagamentos</h2>
+          {% if contratos %}
+            <div class="mt-4 overflow-hidden rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+              <ul class="divide-y divide-line">
+                {% for c in contratos %}
+                  <li class="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+                    <div>
+                      <p class="font-semibold">{{ c.nome_artistico }}
+                        <span class="font-mono text-[11px] tracking-[0.12em] text-ink-soft">#{{ c.id|string|truncate(8, True, '') }}</span>
+                      </p>
+                      <p class="mt-1 text-xs text-ink-soft">{{ c.tipo|tipo_evento }} · {{ c.data_evento|data_br }}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                      <span class="font-display text-xl tracking-tight">{{ c.valor_total|moeda }}</span>
+                      {{ ui.selo(c.status_pagamento|status_pagamento, ui.tom_pagamento(c.status_pagamento)) }}
+                    </div>
+                  </li>
+                {% endfor %}
+              </ul>
+            </div>
+            <p class="mt-4 text-xs text-ink-soft">Os valores retidos são liberados ao artista após você confirmar a apresentação.</p>
+          {% else %}
+            <div class="mt-4">{{ ui.vazio("Nenhum pagamento registrado.") }}</div>
+          {% endif %}
+        </section>
+
+      {% elif aba == 'pedidos' %}
+        <section>
+          <div class="flex flex-wrap items-end justify-between gap-4">
+            <h2 class="font-display text-2xl uppercase tracking-tight">Pedidos de orçamento</h2>
+            <a href="{{ url_for('orcamento') }}" class="rounded-full bg-stage px-5 py-2.5 text-sm font-semibold text-cream transition-colors hover:bg-ink">Pedir novo orçamento</a>
+          </div>
+          {% if pedidos %}
+            <ul class="mt-4 space-y-4">
+              {% for p in pedidos %}
+                <li class="rounded-2xl border border-line bg-cream p-5 ring-1 ring-black/5">
+                  <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p class="font-display text-xl uppercase leading-none tracking-tight">{{ p.categoria }}</p>
+                      <p class="mt-2 text-sm text-ink-soft">{{ p.tipo|tipo_evento }} · {{ p.data_evento|data_br }} às {{ p.horario_inicio.strftime('%H:%M') }} · {{ p.estimativa_convidados }} convidados</p>
+                      <p class="mt-1 text-xs text-ink-soft">{{ p.local }}</p>
+                    </div>
+                    {{ ui.selo(p.status|replace('_', ' '), 'stage' if p.status == 'com_propostas' else 'neutro') }}
                   </div>
-                {% else %}
-                  <span class="status">{{ pr.status }}</span>
-                {% endif %}
-              </div>
-            {% endfor %}
-            {% if not ns.tem %}<p class="hint">Aguardando propostas dos artistas.</p>{% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Você ainda não fez nenhum pedido.</p>
-    {% endif %}
-    <p style="margin-top: 24px"><a class="btn btn--accent" href="{{ url_for('orcamento') }}">Pedir novo orçamento</a></p>
 
-  {% elif aba == 'mensagens' %}
-    <h2 class="section-title">Conversas</h2>
-    {% if mensagens %}
-      <div class="chat">
-        {% for m in mensagens %}
-          <div class="msg {% if m.remetente_id|string == usuario_id %}msg--minha{% endif %}">
-            {% if m.remetente_id|string != usuario_id %}<strong>{{ m.remetente }}</strong><br>{% endif %}
-            {{ m.conteudo }}
-            <small>{{ m.enviada_em.strftime('%d/%m %H:%M') }}</small>
-          </div>
-        {% endfor %}
-      </div>
-    {% else %}
-      <p class="vazio">Nenhuma mensagem ainda.</p>
-    {% endif %}
-  {% endif %}
+                  {% set ns = namespace(tem=false) %}
+                  <ul class="mt-4 divide-y divide-line rounded-xl border border-line bg-paper">
+                    {% for pr in propostas if pr.pedido_id == p.id %}
+                      {% set ns.tem = true %}
+                      <li class="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
+                        <div class="min-w-0 flex-1">
+                          <p class="text-sm">
+                            <a href="{{ url_for('artista_detalhe', artista_id=pr.artista_id) }}" class="font-semibold hover:text-stage">{{ pr.nome_artistico }}</a>
+                            · <span class="font-display text-lg tracking-tight">{{ pr.valor|moeda }}</span>
+                          </p>
+                          {% if pr.data_sugerida %}
+                            <p class="mt-1">{{ ui.selo("sugere " ~ (pr.data_sugerida|data_br) ~ (" às " ~ pr.horario_sugerido.strftime('%H:%M') if pr.horario_sugerido else ""), "aviso") }}</p>
+                          {% endif %}
+                          {% if pr.mensagem %}<p class="mt-1 text-sm text-ink-soft">“{{ pr.mensagem }}”</p>{% endif %}
+                        </div>
+                        {% if pr.status == 'enviada' and p.status in ['aberto', 'com_propostas'] %}
+                          <div class="flex items-center gap-2">
+                            <form action="{{ url_for('recusar_proposta', proposta_id=pr.id) }}" method="post">
+                              <button type="submit" class="rounded-full border border-line px-4 py-2 text-xs font-semibold transition-colors hover:bg-cream">Recusar</button>
+                            </form>
+                            <form action="{{ url_for('aceitar_proposta', proposta_id=pr.id) }}" method="post">
+                              <button type="submit" class="rounded-full bg-stage px-4 py-2 text-xs font-semibold text-cream transition-colors hover:bg-ink">Aceitar</button>
+                            </form>
+                          </div>
+                        {% else %}
+                          {{ ui.selo(pr.status, 'ok' if pr.status == 'aceita' else 'neutro') }}
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                    {% if not ns.tem %}
+                      <li class="px-4 py-3 text-sm text-ink-soft">Aguardando propostas dos artistas.</li>
+                    {% endif %}
+                  </ul>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <div class="mt-4">{{ ui.vazio("Você ainda não fez nenhum pedido.") }}</div>
+          {% endif %}
+        </section>
+
+      {% elif aba == 'mensagens' %}
+        <section>
+          <h2 class="font-display text-2xl uppercase tracking-tight">Conversas</h2>
+          {% if mensagens %}
+            <div class="mt-4 flex flex-col rounded-2xl border border-line bg-cream ring-1 ring-black/5">
+              <div class="space-y-3 px-5 py-5">
+                {% for m in mensagens %}
+                  {% set minha = m.remetente_id|string == usuario_id %}
+                  <p class="max-w-[85%] rounded-2xl px-4 py-2 text-sm {% if minha %}ml-auto bg-ink text-cream{% else %}bg-paper text-ink ring-1 ring-black/5{% endif %}">
+                    {% if not minha %}<b class="block text-xs">{{ m.remetente }}</b>{% endif %}
+                    {{ m.conteudo }}
+                    <span class="mt-1 block font-mono text-[10px] opacity-60">{{ m.enviada_em.strftime('%d/%m %H:%M') }}</span>
+                  </p>
+                {% endfor %}
+              </div>
+            </div>
+          {% else %}
+            <div class="mt-4">{{ ui.vazio("Nenhuma mensagem ainda.") }}</div>
+          {% endif %}
+        </section>
+      {% endif %}
+    </div>
+  </main>
 {% endblock %}

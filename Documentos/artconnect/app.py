@@ -74,6 +74,42 @@ def numero_ou_none(texto):
 # ---------------------------------------------------------------
 # Filtros usados nos templates
 # ---------------------------------------------------------------
+PASTA_FOTOS = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "img")
+
+# palavra no estilo/categoria do artista -> arquivo em static/img
+FOTOS_POR_ESTILO = [
+    ("eletr", "eletronico"),
+    ("dj", "dj"),
+    ("jazz", "jazz"),
+    ("acústico", "folk"),
+    ("folk", "folk"),
+    ("cantor", "jazz"),
+    ("mpb", "jazz"),
+    ("chef", "chef"),
+    ("buffet", "chef"),
+    ("cozinha", "chef"),
+    ("mágic", "magico"),
+    ("foto", "foto"),
+    ("stand", "standup"),
+    ("teatro", "standup"),
+    ("visual", "visual"),
+    ("pintura", "visual"),
+]
+
+
+@app.template_filter("foto_artista")
+def foto_artista(artista):
+    """Devolve a URL da foto do artista, ou "" se não houver foto."""
+    if artista.get("foto_url"):
+        return artista["foto_url"]
+    texto = ""
+    for campo in ["estilo", "categoria", "descricao"]:
+        if artista.get(campo):
+            texto = texto + " " + str(artista[campo]).lower()
+    for palavra, arquivo in FOTOS_POR_ESTILO:
+        if palavra in texto and os.path.exists(os.path.join(PASTA_FOTOS, arquivo + ".jpg")):
+            return url_for("static", filename="img/" + arquivo + ".jpg")
+    return ""
 @app.template_filter("moeda")
 def formatar_moeda(valor):
     if valor is None:
@@ -233,6 +269,12 @@ def index():
         "WHERE av.comentario IS NOT NULL "
         "ORDER BY av.criado_em DESC LIMIT 3"
     )
+    totais = db.buscar_um(
+        "SELECT COUNT(*) AS artistas, COUNT(DISTINCT cidade) AS cidades FROM artistas WHERE ativo = TRUE"
+    )
+    foto_hero = ""
+    if os.path.exists(os.path.join(PASTA_FOTOS, "hero.jpg")):
+        foto_hero = url_for("static", filename="img/hero.jpg")
     return render_template(
         "index.html",
         artistas=artistas,
@@ -243,6 +285,9 @@ def index():
         orcamento_atual=orcamento_texto,
         data_atual=data_texto,
         usar_match=usar_match,
+        total_artistas=totais["artistas"],
+        total_cidades=totais["cidades"],
+        foto_hero=foto_hero,
     )
 
 
@@ -479,7 +524,7 @@ def cadastro():
             flash(erro, "erro")
         return render_template("cadastro.html", categorias=categorias, form=form), 400
 
-    return render_template("cadastro.html", categorias=categorias, form={})
+    return render_template("cadastro.html", categorias=categorias, form=request.args)
 
 
 # ---------------------------------------------------------------
@@ -492,7 +537,7 @@ def painel():
         return redirect(url_for("artista_painel"))
 
     usuario_id = session["usuario_id"]
-    aba = request.args.get("aba", "historico")
+    aba = request.args.get("aba", "visao")
 
     indicadores = db.buscar_um("SELECT * FROM vw_painel_cliente WHERE cliente_id = %s", (usuario_id,))
     contratos = db.buscar_todos(
